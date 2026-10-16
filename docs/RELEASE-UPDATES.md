@@ -1,33 +1,51 @@
 # MaxRAR Help and release updates
 
-Repository: https://github.com/MatilyLabs/MaxRAR. All project destinations and the update endpoint live in `release.config.json`. The application opens only those fixed project links through its native bridge. Star and Report open GitHub pages; they do not submit anything or upload archive data.
+Project links, the public update verification key and the fixed HTTPS feed endpoint are recorded in `release.config.json`. The Tauri plugin configuration must match; `scripts/check-release-config.py` and native tests enforce that match. No GitHub tokens or private signing keys are embedded in the app.
 
-## Current development state
+## Release configuration
 
-Help/About, shortcuts, daily-check scheduling, download progress, signature verification, installation and active-job guards are implemented locally. The default development build has no verification public key and shows Updates aren’t available yet. It does not make background update requests, pretend to be up to date, or fetch unsigned executables. The build and update-staging workflows do not automatically publish releases.
+From v0.1.1 onward, every build includes the public verification key. This removes the optional build environment variable that left v0.1.0 installers unable to check for updates. Users must install v0.1.1 manually once; v0.1.0 cannot acquire its missing key remotely.
 
-A real signed release feed and OS upgrade checks are still required before calling the updater operational for users. Updater artifact signatures are separate from macOS code signing/notarization and Windows publisher signing. Those distribution credentials are not configured here.
+Windows x64, macOS Intel, macOS Apple Silicon and Linux AppImage use Tauri's updater. DEB/RPM installations instead show **Download latest package** and do not offer misleading in-app installation controls. They must be upgraded by installing a newer package through the system package manager.
 
-## Enable release builds later
+Updater signatures are separate from Windows Authenticode and macOS Developer ID signing/notarization. The former establishes which update packages MaxRAR accepts; it does not remove operating-system first-install warnings. OS publisher credentials remain separate release work.
 
-1. Review the Apache-2.0 LICENSE, project NOTICE and third-party redistribution notices before release.
-2. Generate an updater signing key with the official Tauri CLI. Keep the private key outside source control, with a recoverable protected backup. Do not paste it into chat.
-3. Put the public verification key in the GitHub repository variable `MAXRAR_UPDATER_PUBLIC_KEY`, and the private key/password in `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secrets. The public key is embedded at compile time using that environment variable; it is not a secret.
-4. Increase the version consistently in the workspace Cargo manifest, package metadata and Tauri configuration. The About panel reads the runtime app version. Update comparison uses Tauri’s normal newer-version check.
-5. Explicitly run Prepare signed updates. This manual-only workflow has read-only repository permissions and uploads CI artifacts; it contains no release publishing step and is not triggered by a push/tag. Its macOS artifacts need platform signing/notarization before public distribution.
-6. Download the four staging artifacts. Each contains a uniquely named platform asset, its signature and a platform JSON. Merge the platform JSON objects into one `latest.json` (same version, actual release notes, all four platforms). Asset URLs target the corresponding `vVERSION` GitHub release. Publish those assets and `latest.json` only as a separate authorized release operation.
-7. The app reads `releases/latest/download/latest.json`, selects the matching platform/architecture and verifies the downloaded package before offering installation. Never put GitHub credentials into a public desktop build.
+## Preparing a release
 
-Linux self-updates are for AppImage. DEB/RPM installations show package-manager guidance; they do not try to replace their running application through the AppImage updater. Apple Silicon/Intel macOS and Windows x64 have distinct manifests.
+1. Increase the version in `Cargo.toml`, `package.json`, `package-lock.json` and `src-tauri/tauri.conf.json`; regenerate `Cargo.lock`. Write `docs/releases/vVERSION.md`.
+2. Preserve the existing update signing key. Its encrypted private key and password are GitHub repository secrets named `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Keep a protected recoverable backup outside the repository. Do not regenerate or replace it casually: installed apps trust the existing public key.
+3. Run **Release packages and signed updates (manual)**. This is the existing manual release workflow, separate from routine Desktop and CLI validation. It is not triggered by documentation edits, pushes or tags.
+4. Each of the four platform jobs validates configuration, runs checks, creates initial installers and signed updater packages, verifies package signatures and signed versions, and checks that tampered content is rejected.
+5. The final job requires all four platforms. It combines their entries into `latest.json`, includes license notices and SHA-256 checksums, and creates a **draft** GitHub release. No incomplete platform feed is published.
+6. Review the draft and test installed packages. Publishing a non-prerelease as **latest** makes its `latest.json` available at the fixed endpoint, provided the repository is public. Updating another release without this feed would break the latest-release endpoint; always publish the complete release set.
+
+The signing key was generated using the official Tauri CLI. Its public counterpart is safe to distribute. The signing private key/password must never enter source control, logs, release assets or application configuration.
+
+## Public availability and acceptance
+
+GitHub's unauthenticated release URLs do not serve private repository assets. Signed artifacts and their complete feed can be prepared and verified while the repository is private, but ordinary installed apps cannot read that feed until it is publicly accessible. A draft release is also inaccessible to the app. Access failures must remain errors, never **You're up to date**.
+
+Before announcing a public release:
+
+- Confirm the published latest release includes `latest.json` and all four platform assets and signatures, and that the feed and each asset can be downloaded without GitHub authentication.
+- Confirm Check for updates reports the current version correctly on Windows x64, Intel Mac, Apple Silicon Mac and Linux AppImage.
+- Exercise a genuine newer-version upgrade, signature verification, install and restart on each of those platforms. DEB/RPM should open the latest-package page.
+- Exercise offline/missing feed, absent platform, invalid signature, interrupted download and retry. Installation must remain blocked while archive jobs are active.
+
+The native staging verifier is also available locally:
+
+```sh
+cargo run --locked -p wonrar-desktop --example verify-updates -- /path/to/staged-release
+```
+
+It verifies real package bytes and the authenticated version using the same Minisign library used by Tauri, then checks that modified bytes are rejected. Each release platform runs this verifier in CI; it does not execute installers or establish installed upgrade behavior.
 
 ## In-app behavior
 
-Configured builds check after startup if the last attempt was at least 24 hours ago, and reconsider hourly while open. Attempts are recorded before network access to avoid repeated checks on every offline startup. Users can disable automatic checks; manual checks remain available. Errors never become Up to date.
+Configured builds check at startup if the last attempt was at least 24 hours ago, and reconsider hourly while open. Attempts are recorded before network access to avoid repeated requests on every offline startup. Users can disable automatic checks; manual checks remain available.
 
-Downloading and verification happen inside About. The signature verifier is Tauri’s official updater. Release notes render as plain text. The verified package remains in native memory until installation, another check or app exit. Closing About does not close an active download. Download interruptions/errors can be retried. Installation is explicit, blocked by queued/running archive jobs, and holds the archive-job semaphore to prevent concurrent writes. Installation may show OS prompts or exit to the Windows installer; macOS/Linux restart after successful installation.
+Downloading and verification happen inside About. Tauri validates signatures and requires the version in the signature's authenticated comment to match the feed. Release notes render as plain text. The verified package remains in native memory until installation, another check or app exit. Closing About does not close an active download. Download interruptions and errors can be retried.
 
-## Validation before publishing
-
-Exercise upgrades between two real signed releases on Windows x64, macOS Apple Silicon/Intel and Linux AppImage. Test offline/missing feed, absent platform asset, invalid signature, interrupted download, retry, active-job installation denial, and restart behavior. A local UI preview or successful compilation does not verify live release distribution.
+Installation is explicit, blocked by queued/running archive jobs, and holds the archive-job semaphore to prevent concurrent writes. Windows may hand off to the installer; macOS/Linux restart after successful installation. Application code does not accept caller-supplied feed URLs or verification keys.
 
 Reference: https://v2.tauri.app/plugin/updater/

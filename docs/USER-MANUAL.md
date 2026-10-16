@@ -1,6 +1,6 @@
 # MaxRAR user manual
 
-MaxRAR is a desktop archive workspace for Windows, macOS and Linux. This is a development build; available commands depend on the archive format. The application does not execute archive contents to preview or scan them.
+MaxRAR is a desktop archive workspace for Windows, macOS and Linux. Available commands depend on the archive format. The application does not execute archive contents to preview or scan them.
 
 ## Open and browse
 
@@ -43,9 +43,9 @@ The inspector summarizes actual inventory types and folder names, with bounded s
 
 Help provides this manual, actual keyboard shortcuts, update checks, issue reporting and About MaxRAR. Third-party notices are available in the repository. About MaxRAR shows the installed version, project links and update status. Star opens the repository; Report an issue opens the issue chooser without submitting a report automatically.
 
-Configured signed release builds check for updates at startup, at most once daily, with periodic checks while the app remains open. Uncheck Check automatically to disable those checks. Manual checks remain available. A failed connection is not reported as up to date.
+From v0.1.1, Windows, macOS and Linux AppImage builds include update configuration and check at startup, at most once daily, with periodic checks while the app remains open. Uncheck Check automatically to disable those checks. Manual checks remain available. A failed connection is not reported as up to date.
 
-Updates are downloaded and verified inside MaxRAR. Install & restart waits for active archive tasks to finish. Windows may show an installer or permission prompt. Linux self-updates use AppImage; DEB/RPM installations follow their package distribution. Development builds without an update signing key show that updates are not available yet.
+Updates are downloaded and verified inside MaxRAR. Install & restart waits for active archive tasks to finish. Windows may show an installer or permission prompt. Linux self-updates use AppImage; DEB/RPM installations offer Download latest package, which opens the release downloads. Original v0.1.0 users must install v0.1.1 manually once. The release feed must be publicly accessible; private or draft GitHub releases cannot be checked by ordinary installed apps.
 
 ## Keyboard controls
 

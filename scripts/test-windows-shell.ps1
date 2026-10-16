@@ -1,5 +1,6 @@
+param([string]$BundleRoot = 'target/release/bundle')
 $ErrorActionPreference = 'Stop'
-$installer = Get-ChildItem target/release/bundle/nsis/*.exe | Select-Object -First 1
+$installer = Get-ChildItem (Join-Path $BundleRoot 'nsis/*.exe') | Select-Object -First 1
 if (!$installer) { throw 'NSIS installer missing' }
 $install = Join-Path $env:LOCALAPPDATA 'MaxRAR Shell CI'
 $process = Start-Process $installer.FullName -ArgumentList @('/S',"/D=$install") -Wait -PassThru

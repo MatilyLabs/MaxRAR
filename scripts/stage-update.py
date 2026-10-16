@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Stage signed updater assets locally. Does not create or publish a GitHub release."""
 import argparse
+import base64
 import json
 import pathlib
 import re
@@ -9,6 +10,16 @@ import urllib.parse
 
 SUFFIXES = {'darwin-aarch64': '.app.tar.gz', 'darwin-x86_64': '.app.tar.gz',
             'windows-x86_64': '.exe', 'linux-x86_64': '.AppImage'}
+
+def signature_version(signature):
+    try:
+        text = base64.b64decode(signature, validate=True).decode('utf-8')
+        comment = next(line.removeprefix('trusted comment: ') for line in text.splitlines()
+                       if line.startswith('trusted comment: '))
+        return next(field.removeprefix('version:') for field in comment.split('\t')
+                    if field.startswith('version:'))
+    except (ValueError, UnicodeError, StopIteration) as error:
+        raise ValueError('Signature must include a signed application version') from error
 
 def stage(root, platform, version, output):
     if not re.fullmatch(r'\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?', version):
@@ -20,7 +31,7 @@ def stage(root, platform, version, output):
         raise ValueError(f'Expected one signed updater asset for {platform}; found {len(candidates)}')
     asset = candidates[0]
     signature = pathlib.Path(str(asset) + '.sig').read_text().strip()
-    if not signature or len(signature) > 8192:
+    if not signature or len(signature) > 8192 or signature_version(signature) != version:
         raise ValueError('Missing or invalid signature file')
     output = pathlib.Path(output)
     output.mkdir(parents=True, exist_ok=True)
@@ -28,6 +39,11 @@ def stage(root, platform, version, output):
     name = platform + '-' + asset.name
     shutil.copy2(asset, output / name)
     shutil.copy2(str(asset) + '.sig', output / (name + '.sig'))
+    # Initial installations and updater downloads come from the same build.
+    extras = ['*.dmg'] if platform.startswith('darwin-') else ['*.deb', '*.rpm'] if platform.startswith('linux-') else []
+    for pattern in extras:
+        for installer in pathlib.Path(root).rglob(pattern):
+            shutil.copy2(installer, output / installer.name)
     url = config['repository'] + '/releases/download/v' + version + '/' + urllib.parse.quote(name)
     manifest = {'version': version, 'notes': '', 'platforms': {platform: {'url': url, 'signature': signature}}}
     (output / (platform + '.json')).write_text(json.dumps(manifest, indent=2) + '\n')

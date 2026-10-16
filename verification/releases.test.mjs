@@ -22,7 +22,7 @@ test('automatic update checks respect configuration, preference and daily cadenc
 test('unconfigured, offline and incomplete states never say up to date',()=>{
  for(const stage of ['idle','unavailable','error','checking','downloading','verifying'])assert.notEqual(updateTitle({stage}),'You’re up to date');
  assert.equal(updateTitle({stage:'current'}),'You’re up to date');
- assert.match(updateTitle({stage:'unavailable'},'package_manager'),/package manager/);
+ assert.match(updateTitle({stage:'unavailable'},'package_manager'),/Linux package/);
  assert.equal(updateBusy('verifying'),true);assert.equal(updateBusy('ready'),false);
 });
 test('shortcut list and keyboard dispatch use the same definitions',()=>{

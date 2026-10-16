@@ -13,16 +13,16 @@ pub struct Links {
     manual: String,
     issues: String,
     organization: String,
+    downloads: String,
     updater_endpoint: String,
+    updater_public_key: String,
 }
 fn links() -> Links {
     serde_json::from_str(include_str!("../../release.config.json"))
         .expect("Bundled release configuration is invalid")
 }
-fn public_key() -> Option<&'static str> {
-    option_env!("MAXRAR_UPDATER_PUBLIC_KEY")
-        .map(str::trim)
-        .filter(|key| !key.is_empty())
+fn public_key() -> String {
+    links().updater_public_key
 }
 fn supported() -> bool {
     !cfg!(target_os = "linux") || std::env::var_os("APPIMAGE").is_some()
@@ -31,7 +31,7 @@ fn require_updater() -> Result<(), String> {
     if !supported() {
         return Err("package_manager".into());
     }
-    if public_key().is_none() {
+    if public_key().trim().is_empty() {
         return Err("not_configured".into());
     }
     Ok(())
@@ -62,6 +62,7 @@ pub fn open_project_link(app: AppHandle, destination: String) -> Result<(), Stri
         "manual" => links.manual,
         "issues" => links.issues,
         "organization" => links.organization,
+        "downloads" => links.downloads,
         _ => return Err("Unknown project link".into()),
     };
     app.opener()
@@ -100,7 +101,7 @@ pub async fn check_update(
     // The Rust API is the only update entry point; no caller-supplied feed or key.
     let updater = app
         .updater_builder()
-        .pubkey(public_key().unwrap())
+        .pubkey(public_key())
         .endpoints(vec![links()
             .updater_endpoint
             .parse()
@@ -191,14 +192,39 @@ pub async fn install_update(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::Engine;
     #[test]
     fn project_links_are_fixed_to_maxrar() {
         let config = links();
         assert_eq!(config.repository, "https://github.com/MatilyLabs/MaxRAR");
         assert!(config.manual.starts_with(&config.repository));
         assert!(config.issues.starts_with(&config.repository));
+        assert_eq!(
+            config.downloads,
+            format!("{}/releases/latest", config.repository)
+        );
         assert!(config
             .updater_endpoint
             .ends_with("/releases/latest/download/latest.json"));
+    }
+
+    #[test]
+    fn every_build_embeds_a_valid_release_key_and_matches_plugin_config() {
+        let key = public_key();
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(&key)
+            .unwrap();
+        minisign_verify::PublicKey::decode(std::str::from_utf8(&decoded).unwrap()).unwrap();
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        assert_eq!(config["plugins"]["updater"]["pubkey"], key);
+        assert_eq!(config["plugins"]["updater"]["requireSignedVersion"], true);
+        let plugin: tauri_plugin_updater::Config =
+            serde_json::from_value(config["plugins"]["updater"].clone()).unwrap();
+        assert!(plugin.require_signed_version);
+        assert_eq!(
+            config["plugins"]["updater"]["endpoints"][0],
+            links().updater_endpoint
+        );
     }
 }

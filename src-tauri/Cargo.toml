@@ -29,6 +29,7 @@ tokio = { version = "1", features = ["sync", "time", "macros"] }
 tauri-plugin-updater = "2"
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 minisign-verify = "0.3"
+base64 = "0.22"
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 
 [dev-dependencies]
