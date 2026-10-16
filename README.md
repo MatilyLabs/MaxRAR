@@ -10,6 +10,15 @@
   <a href="https://github.com/MatilyLabs/MaxRAR/issues/new/choose"><img src="docs/assets/buttons/issue.svg" alt="Report a MaxRAR issue on GitHub" height="32" /></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/windows-x86_64-MaxRAR_0.1.1_x64-setup.exe"><img src="docs/assets/buttons/get-windows.svg" alt="Download MaxRAR for Windows x64 (EXE installer)" width="228" height="60" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_apple-silicon.dmg"><img src="docs/assets/buttons/get-mac-apple-silicon.svg" alt="Download MaxRAR for Mac with Apple Silicon (DMG)" width="228" height="60" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_intel.dmg"><img src="docs/assets/buttons/get-mac-intel.svg" alt="Download MaxRAR for Mac with Intel (DMG)" width="228" height="60" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1"><img src="docs/assets/buttons/get-linux.svg" alt="Download MaxRAR for Linux x64 (DEB, RPM or AppImage)" width="228" height="60" /></a>
+</p>
+
+<p align="center"><sub>v0.1.1 · Not sure which Mac? Apple menu → About This Mac · <a href="#first-launch-security-warnings-are-expected">First-launch security warnings</a></sub></p>
+
 # MaxRAR — Archive Manager for Windows, macOS & Linux
 
 **Know what you unpack.**
@@ -28,6 +37,15 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
 ## Download
 
 **MaxRAR v0.1.1 is available for testing.** Choose the download for your computer.
+
+<p align="center">
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/windows-x86_64-MaxRAR_0.1.1_x64-setup.exe"><img src="docs/assets/buttons/get-windows.svg" alt="Download MaxRAR for Windows x64 (EXE installer)" width="228" height="60" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_apple-silicon.dmg"><img src="docs/assets/buttons/get-mac-apple-silicon.svg" alt="Download MaxRAR for Mac with Apple Silicon (DMG)" width="228" height="60" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_intel.dmg"><img src="docs/assets/buttons/get-mac-intel.svg" alt="Download MaxRAR for Mac with Intel (DMG)" width="228" height="60" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1"><img src="docs/assets/buttons/get-linux.svg" alt="Download MaxRAR for Linux x64 (DEB, RPM or AppImage)" width="228" height="60" /></a>
+</p>
+
+<p align="center"><sub>v0.1.1 · Not sure which Mac? Apple menu → About This Mac · <a href="#first-launch-security-warnings-are-expected">First-launch security warnings</a></sub></p>
 
 [Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt)
 
