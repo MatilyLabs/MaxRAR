@@ -29,7 +29,7 @@ No COM extension is claimed for the Windows 11 compact menu. No machine-wide reg
 
 The native application accepts `--compress -- <absolute paths…>` and `--extract -- <absolute archive path>`. Each shell command launches a separate review window, avoiding replacement of an existing working window. Ordinary archive Open With behavior remains available.
 
-`src-tauri/src/shell.rs` validates selections and installs the platform registration. Finder templates are generated from `scripts/generate-finder-actions.py`; `src-tauri/shell/windows/hooks.nsh` attaches registration/cleanup to the NSIS package. `scripts/test-windows-shell.ps1` is wired into the Windows CI build to test installed command strings, Send To and cleanup. CI has not been run or published from this workspace.
+`src-tauri/src/shell.rs` validates selections and installs the platform registration. Finder templates are generated from `scripts/generate-finder-actions.py`; `src-tauri/shell/windows/hooks.nsh` attaches registration/cleanup to the NSIS package. `scripts/test-windows-shell.ps1` tests installed command strings, Send To and cleanup, and passed in the Windows CI build for v0.1.0.
 
 Local validation covers native argument parsing, template installation/quoting and creation with preselected sources. Installed Windows Explorer UI and macOS Finder menu visibility remain platform manual checks, separate from unit/build success.
 

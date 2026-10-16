@@ -27,18 +27,22 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
 
 ## Download
 
-MaxRAR is under active development. **Public installers and signed releases are not available yet.**
+**MaxRAR v0.1.0 is available for testing.** Choose the download for your computer.
 
-Future installers will be published on the [MaxRAR releases page](https://github.com/MatilyLabs/MaxRAR/releases). To try MaxRAR now, [build it from source](#run-locally). MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE).
+[Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.0) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/SHA256SUMS.txt)
 
-| Your computer | Package target | Get MaxRAR |
+| Your computer | Package | Download |
 | --- | --- | --- |
-| **Windows** — x64 | Windows installer | [Build from source](#run-locally) |
-| **Mac with Apple Silicon** | ARM64 app / DMG | [Build from source](#run-locally) |
-| **Mac with Intel** | x64 app / DMG | [Build from source](#run-locally) |
-| **Linux** — x64 | DEB / RPM packages | [Build from source](#run-locally) |
+| **Windows** — x64 | EXE installer | [Download for Windows](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_x64-setup.exe) |
+| **Mac with Apple Silicon** | ARM64 DMG | [Download for Apple Silicon](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_aarch64.dmg) |
+| **Mac with Intel** | x64 DMG | [Download for Intel Mac](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_x64.dmg) |
+| **Linux** — x64 | DEB / RPM | [Download DEB](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_amd64.deb) · [Download RPM](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR-0.1.0-1.x86_64.rpm) |
 
-On a Mac, open **Apple menu → About This Mac** to check whether it lists an Apple chip or an Intel processor.
+On a Mac, open **Apple menu → About This Mac** to check whether it lists an Apple chip or an Intel processor. Open the matching DMG and drag MaxRAR into Applications. On Windows, run the EXE installer.
+
+This first release is **unsigned**, and the Mac apps are **not notarized**; your operating system may show an unknown-publisher warning or block first launch. In-app updates are not configured in v0.1.0, so download updates from the releases page. See the [installation notes](docs/releases/v0.1.0.md#installation) and [desktop integration guide](docs/DESKTOP-INTEGRATION.md) for setup.
+
+MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE). The release includes [license texts and notices](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR-0.1.0-Licenses.zip).
 
 ## Why MaxRAR?
 
@@ -148,7 +152,7 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 npm run tauri -- build
 ```
 
-The GitHub Actions configuration builds Windows x64, macOS Intel, macOS Apple Silicon and Linux x64 development artifacts. Those jobs do not publish releases. Local build success does not establish installed behavior on every platform; signing, notarization and broader compatibility testing remain release work.
+GitHub Actions builds and checks Windows x64, macOS Intel, macOS Apple Silicon and Linux x64 packages. Releases are published separately from successful build artifacts. CI success does not establish installed behavior on every platform; signing, notarization and broader compatibility testing remain ongoing work.
 
 ## CLI
 
