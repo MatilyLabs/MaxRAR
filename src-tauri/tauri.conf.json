@@ -1,0 +1,163 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MaxRAR",
+  "version": "0.1.0",
+  "identifier": "app.maxrar.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "MaxRAR",
+        "width": 1440,
+        "height": 960,
+        "minWidth": 960,
+        "minHeight": 640,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Understand, inspect and extract archives",
+    "longDescription": "A professional archive workspace with reviewable extraction plans, bounded previews and an automation CLI.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "zip"
+        ],
+        "name": "ZIP archive",
+        "description": "ZIP archive",
+        "role": "Editor",
+        "mimeType": "application/zip"
+      },
+      {
+        "ext": [
+          "rar"
+        ],
+        "name": "RAR archive",
+        "description": "RAR archive (read and extract)",
+        "role": "Viewer",
+        "mimeType": "application/vnd.rar"
+      },
+      {
+        "ext": [
+          "7z"
+        ],
+        "name": "7z archive",
+        "description": "7z archive",
+        "role": "Editor",
+        "mimeType": "application/x-7z-compressed"
+      },
+      {
+        "ext": [
+          "tar"
+        ],
+        "name": "TAR archive",
+        "description": "TAR archive",
+        "role": "Editor",
+        "mimeType": "application/x-tar"
+      },
+      {
+        "ext": [
+          "gz",
+          "tgz"
+        ],
+        "name": "Gzip archive",
+        "description": "Gzip archive",
+        "role": "Editor",
+        "mimeType": "application/gzip"
+      },
+      {
+        "ext": [
+          "bz2",
+          "tbz",
+          "tbz2"
+        ],
+        "name": "Bzip2 archive",
+        "description": "Bzip2 archive",
+        "role": "Editor",
+        "mimeType": "application/x-bzip2"
+      },
+      {
+        "ext": [
+          "xz",
+          "txz"
+        ],
+        "name": "XZ archive",
+        "description": "XZ archive",
+        "role": "Editor",
+        "mimeType": "application/x-xz"
+      },
+      {
+        "ext": [
+          "zst",
+          "zstd",
+          "tzst"
+        ],
+        "name": "Zstandard archive",
+        "description": "Zstandard archive",
+        "role": "Editor",
+        "mimeType": "application/zstd"
+      },
+      {
+        "ext": [
+          "mrar"
+        ],
+        "name": "MRAR archive (experimental)",
+        "description": "Experimental MaxRAR archive container",
+        "role": "Editor",
+        "mimeType": "application/x-mrar"
+      }
+    ],
+    "resources": {
+      "../THIRD-PARTY-NOTICES.md": "licenses/THIRD-PARTY-NOTICES.md",
+      "../design/icons/fluent/LICENSE": "licenses/fluent/LICENSE",
+      "../design/icons/fluent/NOTICE": "licenses/fluent/NOTICE",
+      "../licenses/yara-x/LICENSE": "licenses/yara-x/LICENSE",
+      "../licenses/yara-x/NOTICE": "licenses/yara-x/NOTICE",
+      "../crates/wonrar-scan/rules/NOTICE.md": "licenses/wonrar-rules/NOTICE.md",
+      "../crates/wonrar-scan/rules/baseline.yar": "licenses/wonrar-rules/baseline.yar",
+      "../licenses/reqwest/LICENSE-APACHE": "licenses/reqwest/LICENSE-APACHE",
+      "../licenses/reqwest/LICENSE-MIT": "licenses/reqwest/LICENSE-MIT",
+      "../licenses/rustls/LICENSE-APACHE": "licenses/rustls/LICENSE-APACHE",
+      "../licenses/rustls/LICENSE-ISC": "licenses/rustls/LICENSE-ISC",
+      "../licenses/rustls/LICENSE-MIT": "licenses/rustls/LICENSE-MIT",
+      "../licenses/minisign-verify/LICENSE": "licenses/minisign-verify/LICENSE",
+      "../licenses/updater/LICENSE_APACHE-2.0": "licenses/updater/LICENSE_APACHE-2.0",
+      "../licenses/updater/LICENSE_MIT": "licenses/updater/LICENSE_MIT",
+      "../licenses/unrar/UNRAR-LICENSE.txt": "licenses/unrar/UNRAR-LICENSE.txt",
+      "../licenses/unrar/WRAPPER-MIT": "licenses/unrar/WRAPPER-MIT",
+      "../licenses/unrar/WRAPPER-APACHE": "licenses/unrar/WRAPPER-APACHE"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "shell/windows/hooks.nsh"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": []
+    }
+  }
+}

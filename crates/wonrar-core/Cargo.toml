@@ -1,0 +1,27 @@
+[package]
+name = "wonrar-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+zip = { version = "9.0.3", default-features = false, features = ["deflate", "aes-crypto"] }
+sha2 = "0.10"
+tempfile = "3"
+cap-std = "3"
+walkdir = "2"
+unicode-normalization = "0.1"
+sevenz-rust2 = { version = "0.24", default-features = false, features = ["aes256", "compress", "deflate", "ppmd"] }
+fs2 = "0.4"
+tar = { version = "0.4.46", default-features = false }
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
+bzip2 = "0.6"
+lzma-rust2 = { version = "0.22", default-features = false, features = ["std", "xz", "encoder"] }
+zstd = { version = "0.13", default-features = false }
+unrar-ng-sys = "=0.7.7"
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

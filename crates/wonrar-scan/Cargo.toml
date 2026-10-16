@@ -1,0 +1,22 @@
+[package]
+name = "wonrar-scan"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.95"
+
+[dependencies]
+wonrar-core = { path = "../wonrar-core" }
+serde.workspace = true
+serde_json.workspace = true
+yara-x = { version = "=1.21.0", default-features = false, features = ["constant-folding", "exact-atoms", "fast-regexp"] }
+tempfile = "3"
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+
+[dev-dependencies]
+tar = "0.4"
+flate2 = "1"
+zstd = "0.13"
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

@@ -1,0 +1,100 @@
+[
+  {
+    "file": "add.svg",
+    "source": "assets/Folder Add/SVG/ic_fluent_folder_add_48_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "extract.svg",
+    "source": "assets/Folder Arrow Right/SVG/ic_fluent_folder_arrow_right_48_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "test.svg",
+    "source": "assets/Clipboard Task List LTR/SVG/ic_fluent_clipboard_task_list_ltr_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "view.svg",
+    "source": "assets/Document Search/SVG/ic_fluent_document_search_32_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "delete.svg",
+    "source": "assets/Delete/SVG/ic_fluent_delete_48_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "find.svg",
+    "source": "assets/Search/SVG/ic_fluent_search_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "wizard.svg",
+    "source": "assets/Sparkle/SVG/ic_fluent_sparkle_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "info.svg",
+    "source": "assets/Info/SVG/ic_fluent_info_48_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "scan.svg",
+    "source": "assets/Scan/SVG/ic_fluent_scan_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "comment.svg",
+    "source": "assets/Document Edit/SVG/ic_fluent_document_edit_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "folder.svg",
+    "source": "assets/Folder/SVG/ic_fluent_folder_48_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "archive.svg",
+    "source": "assets/Folder Zip/SVG/ic_fluent_folder_zip_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "document.svg",
+    "source": "assets/Document/SVG/ic_fluent_document_48_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  },
+  {
+    "file": "code.svg",
+    "source": "assets/Code/SVG/ic_fluent_code_24_filled.svg",
+    "revision": "a347af95478f989038cccbf085978865264c048a",
+    "license": "MIT",
+    "modification": "Recolored filled silhouette with a two-stop gradient."
+  }
+]

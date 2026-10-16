@@ -1,0 +1,6 @@
+YARA-X 1.21.0
+BSD-3-Clause license; see LICENSE.
+Upstream: https://github.com/VirusTotal/yara-x
+Source revision: 7b2637d4655155fdfaf68177edadb9a39406ece0
+License source: https://raw.githubusercontent.com/VirusTotal/yara-x/7b2637d4655155fdfaf68177edadb9a39406ece0/LICENSE
+No VirusTotal service is integrated.

@@ -1,0 +1,76 @@
+name: Desktop and CLI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+
+jobs:
+  build:
+    name: Build (${{ matrix.label }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows-x64
+            bundles: nsis
+          - os: macos-15-intel
+            label: macos-intel
+            bundles: app,dmg
+          - os: macos-15
+            label: macos-apple-silicon
+            bundles: app,dmg
+          - os: ubuntu-24.04
+            label: linux-x64
+            bundles: deb,rpm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable action
+        with:
+          toolchain: '1.95.0'
+          components: rustfmt, clippy
+      - name: Linux system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: cargo fmt --all -- --check
+      - run: cargo test --locked --workspace
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - name: Free checked debug artifacts before packaging
+        run: cargo clean --profile dev
+      - run: cargo build --locked --release -p wonrar-cli
+      - name: Build unsigned development installers
+        run: npm run tauri -- build --bundles ${{ matrix.bundles }}
+      - name: Check Windows Explorer integration
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/test-windows-shell.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: maxrar-${{ matrix.label }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            target/release/bundle/**
+            target/release/maxrar-cli
+            target/release/maxrar-cli.exe
+            THIRD-PARTY-NOTICES.md
+            licenses/**
+            docs/**

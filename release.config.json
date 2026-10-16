@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/MatilyLabs/MaxRAR",
+  "manual": "https://github.com/MatilyLabs/MaxRAR#user-manual",
+  "issues": "https://github.com/MatilyLabs/MaxRAR/issues/new/choose",
+  "organization": "https://www.matily.org",
+  "updaterEndpoint": "https://github.com/MatilyLabs/MaxRAR/releases/latest/download/latest.json"
+}

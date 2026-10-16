@@ -1,0 +1,4 @@
+{
+  "payload": "{\"schemaVersion\": 1, \"enabled\": true, \"validUntil\": 200000, \"rotationSeconds\": 10, \"campaigns\": [{\"id\": \"signature-test\", \"title\": \"Test\", \"description\": \"Test campaign\", \"button\": \"Explore\", \"url\": \"https://github.com/MatilyLabs\", \"icon\": \"app\", \"startsAt\": null, \"endsAt\": null}]}",
+  "signature": "untrusted comment: test fixture\nRURURVNUT05MWcgiKsnfa3he+JXrJy6V8UZK/LiJyWKTvAJDe4VRzCpBbMVcAWwFk6FuEFYUYNbpZWDDKHVZoKZmxUp0EFOE/Ao=\ntrusted comment: MaxRAR test fixture only\nMg7wvcKAxIozepzPsDCw+7q2FTTmixTz4iKt/w3rNp6QWv87+rksmJjtaSXVado3GG8tgsx7L6vepZ+5b1vJDw==\n"
+}

@@ -1,0 +1,68 @@
+# Build output and dependency caches
+/target/
+/node_modules/
+/dist/
+/src-tauri/target/
+/src-tauri/gen/
+/coverage/
+/playwright-report/
+/test-results/
+.vite/
+__pycache__/
+*.py[cod]
+
+# Local settings, credentials and signing material
+/.local/
+.env
+.env.*
+!.env.example
+/signing-keys/
+/release-stage/
+*.key
+*.pem
+*.p12
+*.pfx
+*.p8
+*.mobileprovision
+credentials.json
+
+# Editor / OS temporary files and archive mutation locks
+.idea/
+.vscode/
+*.log
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+*.wonrar.lock
+
+# Local agent context, decisions and implementation history (preserved on disk)
+/AGENTS.md
+/WONRAR-DECISION-BOARD.md
+/docs/*-PLAN.md
+/docs/IMPLEMENTATION-STATUS.md
+/docs/MRAR-FORMAT-PROPOSAL.md
+/docs/RAR-ADAPTER-NOTES.md
+
+# Unpublished concepts, prompts, screenshots and interactive QA harnesses
+/design/DESIGN-SPEC.md
+/design/concepts/
+/design/reference/
+/design/screenshots/
+/design/qa/
+
+# Optional samples, promotion templates and compression research stay local
+/examples/
+/promotions/
+/research/
+/crates/wonrar-core/examples/
+
+# Machine-specific run receipts; tests and public synthetic fixtures remain included
+/verification/*.json
+
+# Do not ignore archive formats globally: interoperability fixtures in
+# crates/wonrar-core/tests/fixtures are required test inputs.
+# Keep Cargo.lock, package-lock.json, automated tests and all license notices.

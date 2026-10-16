@@ -1,0 +1,34 @@
+[package]
+name = "wonrar-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "wonrar_desktop"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "maxrar"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+wonrar-core = { path = "../crates/wonrar-core" }
+wonrar-scan = { path = "../crates/wonrar-scan" }
+wonrar-inspect = { path = "../crates/wonrar-inspect" }
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tokio = { version = "1", features = ["sync", "time", "macros"] }
+tauri-plugin-updater = "2"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+minisign-verify = "0.3"
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+
+[dev-dependencies]
+tempfile = "3"

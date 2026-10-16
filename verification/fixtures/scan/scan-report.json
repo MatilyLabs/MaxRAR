@@ -1,0 +1,51 @@
+{
+  "status": "findings",
+  "message": "2 static findings; inspection coverage complete within configured limits. Review evidence and test/heuristic labels.",
+  "archive_path": "/fixtures/scan-demo.zip",
+  "archive_identity": "67ef9a0dd32c91e93817293acfcf426f2fd8a118f4162d84cafb8109cff51937",
+  "engine": "YARA-X + WonRaR structural inspection",
+  "engine_version": "yara-x/1.21.0; wonrar-scan/0.1.0",
+  "rule_version": "2026.10.14.1",
+  "structural_findings": [],
+  "rule_findings": [
+    {
+      "code": "WonRaR_Test_Sentinel",
+      "severity": "test",
+      "message": "Benign WonRaR scanner test marker matched. This is a test finding, not malware.",
+      "entry_id": "1",
+      "path": "test-marker.txt"
+    },
+    {
+      "code": "WonRaR_Shell_Download_Pipe_Execution",
+      "severity": "warning",
+      "message": "Download command and shell-pipe execution indicators occur together. Common installers can match; review the command source.",
+      "entry_id": "2",
+      "path": "command-example.txt"
+    }
+  ],
+  "coverage": {
+    "total_files": 3,
+    "scanned_files": 3,
+    "skipped_files": 0,
+    "truncated_files": 0,
+    "decoded_bytes": 456,
+    "nested_archives": 0,
+    "opaque_containers": 0,
+    "complete": true
+  },
+  "skipped": [],
+  "elapsed_ms": 206,
+  "limits": {
+    "max_entries": 2000,
+    "max_entry_bytes": 8388608,
+    "max_total_bytes": 134217728,
+    "max_duration_secs": 60,
+    "max_depth": 1
+  },
+  "warnings": [
+    "Bundled baseline rules and static indicators are limited coverage, not a comprehensive antivirus database or a safety guarantee.",
+    "No code, documents, serialized objects, installers or archive scripts were executed. No archive content was uploaded.",
+    "Solid/container decoding may process preceding bytes beyond the scanned entry buffer; decoder resource limits depend on worker controls.",
+    "Scan ran in a supervised worker (120-second wall timeout; sampled 768 MiB resident-memory threshold). Sampling can overshoot and is not a hard memory reservation or filesystem/network permission sandbox."
+  ]
+}

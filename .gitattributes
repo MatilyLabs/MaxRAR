@@ -1,0 +1,14 @@
+# Keep source formatting stable on Windows, macOS and Linux.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.rar binary
+*.gz binary
+
+# Preserve upstream license formatting without treating its whitespace as code.
+licenses/** -whitespace

@@ -1,0 +1,19 @@
+[workspace]
+members = ["crates/wonrar-core", "crates/wonrar-cli", "crates/wonrar-inspect", "crates/wonrar-scan", "src-tauri"]
+default-members = ["crates/wonrar-core", "crates/wonrar-cli"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.95"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = true

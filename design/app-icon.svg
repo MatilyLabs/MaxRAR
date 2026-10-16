@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="case" x1="70" y1="34" x2="440" y2="486" gradientUnits="userSpaceOnUse"><stop stop-color="#6083ff"/><stop offset="1" stop-color="#253bc6"/></linearGradient>
+    <linearGradient id="front" x1="128" y1="134" x2="380" y2="446" gradientUnits="userSpaceOnUse"><stop stop-color="#e9f2ff"/><stop offset="1" stop-color="#b5d1ff"/></linearGradient>
+  </defs>
+  <rect x="28" y="28" width="456" height="456" rx="112" fill="url(#case)"/>
+  <path d="M128 132h98l28 30h130a24 24 0 0 1 24 24v192a30 30 0 0 1-30 30H134a30 30 0 0 1-30-30V156a24 24 0 0 1 24-24Z" fill="#819fff"/>
+  <path d="M126 186h260a22 22 0 0 1 22 22v170a30 30 0 0 1-30 30H134a30 30 0 0 1-30-30V208a22 22 0 0 1 22-22Z" fill="url(#front)"/>
+  <path d="M239 186h34v156h-34z" fill="#3854d1"/>
+  <g fill="#dceaff"><path d="M240 193h15v15h-15zm17 17h15v15h-15zm-17 17h15v15h-15zm17 17h15v15h-15zm-17 17h15v15h-15zm17 17h15v15h-15z"/></g>
+  <rect x="227" y="301" width="58" height="71" rx="17" fill="#fff"/>
+  <rect x="242" y="316" width="28" height="30" rx="8" fill="#3854d1"/>
+</svg>
