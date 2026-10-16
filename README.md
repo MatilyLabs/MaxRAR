@@ -27,22 +27,59 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
 
 ## Download
 
-**MaxRAR v0.1.0 is available for testing.** Choose the download for your computer.
+**MaxRAR v0.1.1 is available for testing.** Choose the download for your computer.
 
-[Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.0) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/SHA256SUMS.txt)
+[Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt)
 
 | Your computer | Package | Download |
 | --- | --- | --- |
-| **Windows** — x64 | EXE installer | [Download for Windows](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_x64-setup.exe) |
-| **Mac with Apple Silicon** | ARM64 DMG | [Download for Apple Silicon](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_aarch64.dmg) |
-| **Mac with Intel** | x64 DMG | [Download for Intel Mac](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_x64.dmg) |
-| **Linux** — x64 | DEB / RPM | [Download DEB](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR_0.1.0_amd64.deb) · [Download RPM](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR-0.1.0-1.x86_64.rpm) |
+| **Windows** — x64 | EXE installer | [Download for Windows](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/windows-x86_64-MaxRAR_0.1.1_x64-setup.exe) |
+| **Mac with Apple Silicon** (M1, M2, M3, M4…) | DMG | [Download for Apple Silicon](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_apple-silicon.dmg) |
+| **Mac with Intel** | DMG | [Download for Intel Mac](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_intel.dmg) |
+| **Linux** — x64 | DEB / RPM / AppImage | [DEB](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_amd64.deb) · [RPM](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR-0.1.1-1.x86_64.rpm) · [AppImage](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/linux-x86_64-MaxRAR_0.1.1_amd64.AppImage) |
 
-On a Mac, open **Apple menu → About This Mac** to check whether it lists an Apple chip or an Intel processor. Open the matching DMG and drag MaxRAR into Applications. On Windows, run the EXE installer.
+Not sure which Mac you have? Open **Apple menu → About This Mac**. If it lists a chip such as “Apple M2”, choose Apple Silicon. If it lists an Intel processor, choose Intel.
 
-This first release is **unsigned**, and the Mac apps are **not notarized**; your operating system may show an unknown-publisher warning or block first launch. In-app updates are not configured in v0.1.0, so download updates from the releases page. See the [installation notes](docs/releases/v0.1.0.md#installation) and [desktop integration guide](docs/DESKTOP-INTEGRATION.md) for setup.
+### First launch: security warnings are expected
 
-MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE). The release includes [license texts and notices](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.0/MaxRAR-0.1.0-Licenses.zip).
+MaxRAR is not yet signed with a Windows publisher certificate (Authenticode) and the Mac apps are not Apple-notarized. Windows and macOS will therefore warn you the first time. This is expected for unsigned software; it is not a sign that the file is damaged. Before installing, you can compare the file’s SHA-256 with the [checksums file](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt) (Windows: `certutil -hashfile <file> SHA256`; Mac/Linux: `shasum -a 256 <file>`). Only continue if the values match and you downloaded from this repository’s releases page.
+
+**Windows**
+
+1. Run `windows-x86_64-MaxRAR_0.1.1_x64-setup.exe`.
+2. If you see **“Windows protected your PC”** (Microsoft Defender SmartScreen), choose **More info**, then **Run anyway**.
+3. Follow the installer, then open **MaxRAR** from the Start menu.
+4. On Windows 11, the right-click actions appear under **Show more options**. Use **Send to → Compress with MaxRAR** for several files or folders.
+
+**macOS**
+
+1. Open the DMG for your Mac and drag **MaxRAR** into **Applications**.
+2. Open MaxRAR from Applications. macOS will likely say it can’t verify the app or that it “cannot be opened”. Click **Done** (or **Cancel**), don’t move it to the Bin.
+3. Open **System Settings → Privacy & Security**, scroll to the Security section, and click **Open Anyway** next to the MaxRAR message. Confirm with your password or Touch ID, then click **Open**. You only need to do this once.
+   - On macOS 14 and earlier you can instead right-click (Control-click) MaxRAR in Applications, choose **Open**, then **Open** again.
+4. If macOS says the app is **“damaged”**, remove the download quarantine flag in Terminal, then open it again:
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/MaxRAR.app
+   ```
+
+5. To add Finder compress/extract actions, choose **Help → Desktop integration → Enable desktop actions**.
+
+**Linux**
+
+Install the DEB or RPM with your package manager so system libraries are resolved. For the AppImage, make it executable (`chmod +x MaxRAR_0.1.1_amd64.AppImage`) and run it. Only the AppImage supports in-app updates; DEB/RPM installs link you to the latest packages.
+
+### Using MaxRAR for the first time
+
+- **Open an archive:** double-click it, choose **Open** in MaxRAR, or drag it onto the window. Browse folders, search filenames and preview supported text before extracting.
+- **Extract:** choose **Extract To**, review the destination, pick Skip, Keep both or Replace for existing files, then **Extract**.
+- **Create an archive:** select files or folders and choose a format (ZIP or 7z, with optional password). RAR can be opened and extracted, not created.
+- **Check an archive:** **Test** verifies integrity; **Scan** is a limited local check, not antivirus.
+- **Updates:** v0.1.0 had no working update check, so install v0.1.1 manually once. After that, use **About MaxRAR** to check for signed updates (the project’s release downloads must be publicly reachable).
+
+See the [user manual](docs/USER-MANUAL.md) and [desktop integration guide](docs/DESKTOP-INTEGRATION.md) for more.
+
+MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE). The release includes [license texts and notices](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR-0.1.1-Licenses.zip).
 
 ## Why MaxRAR?
 
