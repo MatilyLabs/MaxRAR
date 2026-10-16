@@ -16,7 +16,7 @@
 
 MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built with Rust and Tauri. Create ZIP and 7z archives, extract RAR4/RAR5 files, preview supported text before extraction, test archive integrity, and inspect archive contents locally.
 
-[Download](#download) · [Screenshots](#screenshots) · [Supported formats](#supported-formats) · [User manual](#user-manual) · [CLI](#cli) · [FAQ](#frequently-asked-questions)
+[Download](#download) · [Screenshots](#screenshots) · [Supported formats](#supported-formats) · [MRAR](#experimental-mrar) · [User manual](#user-manual) · [CLI](#cli) · [FAQ](#frequently-asked-questions)
 
 <details>
 <summary>View the hero without animation</summary>
@@ -84,11 +84,46 @@ Scan the archive or a selection. Results distinguish warning indicators and insp
 | MRAR (`.mrar`) | Experimental /0 and /1 | Experimental /1 |
 | ZIP-based JAR, OpenDocument, WHL, NPZ and modern ZIP-based checkpoints | Generic container operations | Generic ZIP creation |
 | RAR4 / RAR5 (single volume) | Yes, including supported solid and encrypted archives | Not supported |
-| Other formats not listed above | Not implemented | Not supported |
+
+**Need another format?** [Request format support](https://github.com/MatilyLabs/MaxRAR/issues/new?title=Format%20support%20request) and tell us the extension and whether you need extraction, creation, or both.
 
 ZIP supports staged deletion and comment edits. Other formats currently have more limited editing. Generic package/model inspection does not validate application semantics or deserialize models. Password protection can leave filenames visible. See the [core format contract](crates/wonrar-core/README.md) for exact behavior and limits.
 
 **Test checks integrity; Scan checks limited static indicators. Neither is a guarantee that content is safe.** Scan is not comprehensive antivirus protection. Archive repair, split volumes and metadata-preserving backup support are not implemented.
+
+## Experimental MRAR
+
+**MaxRAR’s own archive format, with shared compression and built-in integrity checks.**
+
+MRAR/1 groups related small files, compresses the archive index, and verifies
+content with SHA-256 checks. MaxRAR can create, browse, preview, test and extract
+`.mrar` archives, and still reads legacy MRAR/0 files.
+
+### Compression snapshot: 1 GiB of generated text
+
+In this exploratory test, MRAR/1 produced a **27.6 MiB archive — 53.5% smaller than ZIP**.
+
+| Format | Archive size | Create time |
+| --- | ---: | ---: |
+| **MRAR/1** | **27.6 MiB** | **22.1 s** |
+| ZIP | 59.4 MiB | 6.0 s |
+| 7z | 26.3 MiB | 302.2 s |
+| TAR.ZST | 30.4 MiB | 3.8 s |
+
+Measured with MaxRAR’s optimized Rust core on an Intel Mac. One trial per
+profile on the same retained synthetic input; MRAR/1 was measured after the
+other profiles. These are MaxRAR writer timings, including inventory and
+verification work. Results vary with files and settings.
+[See all four workloads, settings and exact measurements](docs/benchmarks/MRAR-COMPARISON.md).
+
+Shared compression also reduced our related-small-file fixture by **94.6%**
+compared with MRAR/0. Grouping can increase memory use and the work needed to
+read an individual file.
+
+**MRAR is experimental.** Keep your originals; use established formats when you
+need stable exchange or backups.
+
+[MRAR/1 specification](docs/MRAR-1-SPEC.md) · [Legacy MRAR/0 specification](docs/MRAR-0-SPEC.md)
 
 ## Run locally
 
@@ -130,14 +165,6 @@ maxrar-cli extract-plan plan.json --json --progress
 ```
 
 Use the built executable from `target/release/` unless it is on your PATH. Review plans before executing them. Password input is available through `--password-stdin`; do not put passwords in command arguments. For automation, bind entry IDs to the reviewed archive using `--expect-identity`. Run `maxrar-cli --help` for all commands.
-
-## Experimental MRAR
-
-MRAR is an original indexed container using Zstandard and stored blocks. The current /1 writer shares compression across small files in groups capped at 8 MiB, compresses metadata and verifies group/block/file/container SHA-256 hashes. The reader also accepts legacy /0 archives. New /1 archives require an updated MaxRAR build.
-
-In the recorded exploratory tests, /1 reduced a related-file fixture by **94.6%** and a small source snapshot by **24.1%** compared with /0. PeaZip's tested engines still produced smaller archives on those inputs. Grouping increases memory use and selected-file decoding work. These results do not establish a universal compression advantage or format stability.
-
-[MRAR/1 specification](docs/MRAR-1-SPEC.md) · [Legacy MRAR/0 specification](docs/MRAR-0-SPEC.md)
 
 ## Frequently asked questions
 
