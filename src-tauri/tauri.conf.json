@@ -145,14 +145,18 @@
       "../licenses/updater/LICENSE_MIT": "licenses/updater/LICENSE_MIT",
       "../licenses/unrar/UNRAR-LICENSE.txt": "licenses/unrar/UNRAR-LICENSE.txt",
       "../licenses/unrar/WRAPPER-MIT": "licenses/unrar/WRAPPER-MIT",
-      "../licenses/unrar/WRAPPER-APACHE": "licenses/unrar/WRAPPER-APACHE"
+      "../licenses/unrar/WRAPPER-APACHE": "licenses/unrar/WRAPPER-APACHE",
+      "../LICENSE": "licenses/maxrar/LICENSE",
+      "../NOTICE": "licenses/maxrar/NOTICE"
     },
     "windows": {
       "nsis": {
         "installMode": "currentUser",
         "installerHooks": "shell/windows/hooks.nsh"
       }
-    }
+    },
+    "license": "Apache-2.0",
+    "licenseFile": "../LICENSE"
   },
   "plugins": {
     "updater": {

@@ -1,6 +1,6 @@
 # Third-party acknowledgments
 
-MaxRAR is an original application. The project has not yet applied its proposed Apache-2.0 license; no top-level application license is implied by these dependency notices. Dependencies and assets remain under their own licenses.
+MaxRAR is an original application. Original MaxRAR code and authored materials are licensed under Apache-2.0; see LICENSE and NOTICE. Dependencies and assets remain under their own licenses.
 
 ## Microsoft Fluent System Icons
 
@@ -18,13 +18,13 @@ Native platform WebView libraries and system codecs retain their platform licens
 
 YARA-X 1.21.0 is used as a local Rust pattern-matching dependency under BSD-3-Clause. Its exact upstream license and source revision are preserved in `licenses/yara-x/`. YARA-X is developed by VirusTotal; the VirusTotal service/API is not integrated. Its Wasmtime/Cranelift runtime and other transitive dependencies retain their own licenses; resolved metadata is in Cargo.lock.
 
-The five baseline rules were authored for MaxRAR, not copied from a third-party rule collection. Their provenance and scope are recorded in `crates/wonrar-scan/rules/NOTICE.md`. Original application/rule licensing remains pending.
+The five baseline rules were authored for MaxRAR, not copied from a third-party rule collection. Their provenance and scope are recorded in `crates/wonrar-scan/rules/NOTICE.md`. The original application and these authored rules are licensed under Apache-2.0.
 
 New archive dependencies include tar (MIT OR Apache-2.0), flate2 (MIT OR Apache-2.0), bzip2 (MIT OR Apache-2.0), libbz2-rs-sys (bzip2-1.0.6), lzma-rust2 (Apache-2.0), zstd (MIT), and zstd-safe/native zstd-sys (BSD-3-Clause). sysinfo is MIT; libc is MIT OR Apache-2.0. Wasmtime/Cranelift components declare Apache-2.0 WITH LLVM-exception. This inventory is not a substitute for complete transitive license collection and redistribution review before publication.
 
 ## Desktop updates
 
-Tauri plugin updater 2.14.0 (Apache-2.0 OR MIT) implements the update client, with minisign-verify 0.3.0 (MIT) for package signatures. Upstream sources: https://github.com/tauri-apps/plugins-workspace and https://github.com/jedisct1/rust-minisign-verify . Their license texts are preserved under licenses/updater/ and licenses/minisign-verify/. Exact versions and transitive dependency licenses are recorded by Cargo.lock and Cargo metadata. No application license is adopted by adding these notices.
+Tauri plugin updater 2.14.0 (Apache-2.0 OR MIT) implements the update client, with minisign-verify 0.3.0 (MIT) for package signatures. Upstream sources: https://github.com/tauri-apps/plugins-workspace and https://github.com/jedisct1/rust-minisign-verify . Their license texts are preserved under licenses/updater/ and licenses/minisign-verify/. Exact versions and transitive dependency licenses are recorded by Cargo.lock and Cargo metadata. These component notices do not change their upstream licenses.
 
 Inspector promotions use reqwest 0.13.5 (MIT OR Apache-2.0), rustls 0.23.46 (Apache-2.0 OR ISC OR MIT), and minisign-verify 0.3.0 (MIT). License files are preserved under `licenses/reqwest/`, `licenses/rustls/` and `licenses/minisign-verify/`. The signed feed carries plain text and approved links; no remote advertising SDK is included.
 

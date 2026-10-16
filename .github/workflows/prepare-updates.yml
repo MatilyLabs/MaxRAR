@@ -58,6 +58,7 @@ jobs:
         run: |
           release_version=$(node -p "require('./src-tauri/tauri.conf.json').version")
           python scripts/stage-update.py --root target/${{ matrix.rust_target }}/release/bundle --platform '${{ matrix.target }}' --version "$release_version"
+          cp LICENSE NOTICE THIRD-PARTY-NOTICES.md release-stage/
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: maxrar-signed-${{ matrix.target }}

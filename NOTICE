@@ -1,0 +1,14 @@
+MaxRAR
+Copyright 2026 MaxRAR contributors
+
+A product of Matily: https://www.matily.org
+Source repository: https://github.com/MatilyLabs/MaxRAR
+
+MaxRAR's original source code, documentation, application artwork and authored
+baseline scan rules are licensed under the Apache License, Version 2.0.
+See LICENSE for the complete terms.
+
+Third-party code, icons, fixtures and other materials retain their respective
+licenses and attribution notices. See THIRD-PARTY-NOTICES.md and licenses/.
+In particular, the bundled native UnRAR decoder has its own license; it is not
+relicensed under Apache-2.0 by this notice.

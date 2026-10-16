@@ -29,7 +29,7 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
 
 MaxRAR is under active development. **Public installers and signed releases are not available yet.**
 
-Future installers will be published on the [MaxRAR releases page](https://github.com/MatilyLabs/MaxRAR/releases). To try MaxRAR now, [build it from source](#run-locally). A license for the original application code has not yet been applied.
+Future installers will be published on the [MaxRAR releases page](https://github.com/MatilyLabs/MaxRAR/releases). To try MaxRAR now, [build it from source](#run-locally). MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE).
 
 | Your computer | Package target | Get MaxRAR |
 | --- | --- | --- |
@@ -206,4 +206,4 @@ Read the [MaxRAR user manual](docs/USER-MANUAL.md) for browsing, creation, extra
 
 A product of [Matily](https://www.matily.org). [Report an issue](https://github.com/MatilyLabs/MaxRAR/issues/new/choose) after reviewing any filenames or logs you choose to share.
 
-A license for the original application code has not yet been applied. Dependencies and assets retain their respective licenses; see [third-party acknowledgments](THIRD-PARTY-NOTICES.md) and [license texts](licenses/).
+MaxRAR’s original code, documentation, application artwork and authored baseline scan rules are licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for project attribution. Third-party code, icons and fixtures retain their respective licenses; see [third-party acknowledgments](THIRD-PARTY-NOTICES.md) and [license texts](licenses/). The native UnRAR decoder remains under its separate UnRAR license.

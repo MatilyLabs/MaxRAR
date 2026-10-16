@@ -72,5 +72,7 @@ jobs:
             target/release/maxrar-cli
             target/release/maxrar-cli.exe
             THIRD-PARTY-NOTICES.md
+            LICENSE
+            NOTICE
             licenses/**
             docs/**

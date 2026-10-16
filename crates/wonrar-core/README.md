@@ -1,8 +1,8 @@
 # MaxRAR archive core
 
 Shared synchronous Rust API for desktop worker jobs and the JSON CLI. Callers must
-run archive operations off their UI thread. Original source licensing is pending
-the owner's final license decision; dependency licenses remain applicable.
+run archive operations off their UI thread. Original source is licensed under [Apache License 2.0](../../LICENSE);
+dependency licenses remain applicable. See [NOTICE](../../NOTICE) for attribution.
 
 ## Implemented formats and operations
 

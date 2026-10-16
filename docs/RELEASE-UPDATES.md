@@ -4,13 +4,13 @@ Repository: https://github.com/MatilyLabs/MaxRAR. All project destinations and t
 
 ## Current development state
 
-Help/About, shortcuts, daily-check scheduling, download progress, signature verification, installation and active-job guards are implemented locally. The default development build has no verification public key and shows Updates aren’t available yet. It does not make background update requests, pretend to be up to date, or fetch unsigned executables. No repository pushes, releases, signing-key generation or GitHub workflow execution are part of this implementation.
+Help/About, shortcuts, daily-check scheduling, download progress, signature verification, installation and active-job guards are implemented locally. The default development build has no verification public key and shows Updates aren’t available yet. It does not make background update requests, pretend to be up to date, or fetch unsigned executables. The build and update-staging workflows do not automatically publish releases.
 
 A real signed release feed and OS upgrade checks are still required before calling the updater operational for users. Updater artifact signatures are separate from macOS code signing/notarization and Windows publisher signing. Those distribution credentials are not configured here.
 
 ## Enable release builds later
 
-1. After repository cleanup, adopt the intended source license and prepare the initial push separately.
+1. Review the Apache-2.0 LICENSE, project NOTICE and third-party redistribution notices before release.
 2. Generate an updater signing key with the official Tauri CLI. Keep the private key outside source control, with a recoverable protected backup. Do not paste it into chat.
 3. Put the public verification key in the GitHub repository variable `MAXRAR_UPDATER_PUBLIC_KEY`, and the private key/password in `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` secrets. The public key is embedded at compile time using that environment variable; it is not a secret.
 4. Increase the version consistently in the workspace Cargo manifest, package metadata and Tauri configuration. The About panel reads the runtime app version. Update comparison uses Tauri’s normal newer-version check.
