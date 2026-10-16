@@ -1,6 +1,12 @@
 name: Release packages and signed updates (manual)
+run-name: ${{ inputs.source_run_id && format('Assemble existing signed packages (run {0})', inputs.source_run_id) || 'Build signed release packages' }}
 on:
   workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Existing run with four verified platform builds (assembly only; leave empty for new builds)
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -12,8 +18,28 @@ env:
   CARGO_PROFILE_DEV_DEBUG: '0'
   CARGO_PROFILE_TEST_DEBUG: '0'
 jobs:
+  prepare:
+    name: Check version tag and prepared draft
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      run_id: ${{ steps.source.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Require the version tag at this exact commit
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          python3 scripts/check-release-config.py
+          python3 scripts/check-release-tag.py --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --source-run "$SOURCE_RUN_ID" --current-run "$GITHUB_RUN_ID" --output "$GITHUB_OUTPUT"
   stage:
+    if: ${{ inputs.source_run_id == '' }}
     name: Signed release - ${{ matrix.label }}
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -95,17 +121,21 @@ jobs:
           path: release-stage/
           if-no-files-found: error
   assemble:
-    name: Complete feed and draft release
-    needs: stage
+    name: Complete feed and upload to draft
+    needs: [prepare, stage]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && (needs.stage.result == 'success' || (needs.stage.result == 'skipped' && inputs.source_run_id != '')) }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: maxrar-signed-*
           path: signed-platforms
+          run-id: ${{ needs.prepare.outputs.run_id }}
+          github-token: ${{ github.token }}
       - name: Assemble complete release
         run: |
           release_version=$(python3 -c "import json;print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
@@ -116,9 +146,15 @@ jobs:
           name: maxrar-complete-release
           path: release-stage/
           if-no-files-found: error
-      - name: Create reviewable draft with all packages and update feed
+          overwrite: true
+      - name: Attach verified packages to the prepared draft
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           release_version=$(python3 -c "import json;print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
-          gh release create "v${release_version}" release-stage/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "MaxRAR v${release_version}" --notes-file "docs/releases/v${release_version}.md" --draft
+          existing=$(gh release view "v${release_version}" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)
+          if [ "$existing" != true ]; then
+            echo "The prepared draft is missing or already published; refusing to replace its assets."
+            exit 1
+          fi
+          gh release upload "v${release_version}" release-stage/* --repo "$GITHUB_REPOSITORY" --clobber
