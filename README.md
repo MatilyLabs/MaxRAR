@@ -8,7 +8,6 @@
   <a href="https://github.com/MatilyLabs/MaxRAR/stargazers"><img src="https://img.shields.io/github/stars/MatilyLabs/MaxRAR?style=flat-square&logo=github&label=stars&color=c9a227" alt="GitHub stars" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="Apache License 2.0" /></a>
   <img src="https://img.shields.io/badge/built%20with-Rust-dea584?style=flat-square&logo=rust&logoColor=white" alt="Built with Rust" />
-  <img src="https://img.shields.io/badge/built%20with-Tauri-24c8db?style=flat-square&logo=tauri&logoColor=white" alt="Built with Tauri" />
   <img src="https://img.shields.io/badge/UI-Svelte-ff3e00?style=flat-square&logo=svelte&logoColor=white" alt="Svelte interface" />
   <a href="https://github.com/MatilyLabs/MaxRAR/issues"><img src="https://img.shields.io/github/issues/MatilyLabs/MaxRAR?style=flat-square&label=issues" alt="Open issues" /></a>
 </p>
