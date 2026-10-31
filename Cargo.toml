@@ -4,7 +4,7 @@ default-members = ["crates/wonrar-core", "crates/wonrar-cli"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.95"
 license = "Apache-2.0"

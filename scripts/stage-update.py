@@ -10,6 +10,9 @@ import urllib.parse
 
 SUFFIXES = {'darwin-aarch64': '.app.tar.gz', 'darwin-x86_64': '.app.tar.gz',
             'windows-x86_64': '.exe', 'linux-x86_64': '.AppImage'}
+# Mac installers are named for the chip a person chooses on the download page.
+DMG_NAMES = {'darwin-aarch64': 'MaxRAR_{version}_macOS_apple-silicon.dmg',
+             'darwin-x86_64': 'MaxRAR_{version}_macOS_intel.dmg'}
 
 def signature_version(signature):
     try:
@@ -43,7 +46,7 @@ def stage(root, platform, version, output):
     extras = ['*.dmg'] if platform.startswith('darwin-') else ['*.deb', '*.rpm'] if platform.startswith('linux-') else []
     for pattern in extras:
         for installer in pathlib.Path(root).rglob(pattern):
-            shutil.copy2(installer, output / installer.name)
+            shutil.copy2(installer, output / DMG_NAMES.get(platform, installer.name).format(version=version))
     url = config['repository'] + '/releases/download/v' + version + '/' + urllib.parse.quote(name)
     manifest = {'version': version, 'notes': '', 'platforms': {platform: {'url': url, 'signature': signature}}}
     (output / (platform + '.json')).write_text(json.dumps(manifest, indent=2) + '\n')

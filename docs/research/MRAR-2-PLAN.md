@@ -1,6 +1,6 @@
 # MRAR/2 research and proof plan
 
-October 31, 2026 · Status: plan, nothing implemented · Owner: MaxRAR core
+October 31, 2026 · Status: Phases 0–1 and the MRAR/2 format are implemented · Owner: MaxRAR core
 
 **Goal.** Make MRAR compress harder *and* faster, then show with a reproducible,
 public benchmark that MRAR sits on the best ratio/speed trade-off curve
