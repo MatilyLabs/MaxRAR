@@ -412,6 +412,32 @@ fn sevenz_roundtrip_with_password_and_explicit_read_only_edits() {
 }
 
 #[test]
+fn sevenz_wrong_passwords_never_test_or_extract() {
+    let t = tempfile::tempdir().unwrap();
+    let source = t.path().join("hello.txt");
+    fs::write(&source, "héllo sevenz").unwrap();
+    let a = t.path().join("a.7z");
+    create_with_password(&a, &[source], &cancel(), &|_| {}, Some("password")).unwrap();
+    // A wrong key can decode to a short garbage stream; every attempt must fail.
+    for i in 0..3000 {
+        let wrong = format!("wrong-{i}");
+        assert!(test_with_password(&a, &cancel(), &|_| {}, Some(&wrong)).is_err());
+        let dest = t.path().join(format!("out-{i}"));
+        let p = plan_with_password(
+            &a,
+            &dest,
+            &[],
+            ConflictPolicy::Skip,
+            Limits::default(),
+            Some(&wrong),
+        )
+        .unwrap();
+        assert!(extract_with_password(&p, &cancel(), &|_| {}, Some(&wrong)).is_err());
+        assert!(!dest.join("hello.txt").exists());
+    }
+}
+
+#[test]
 fn sevenz_traversal_and_symlink_metadata_are_blocked() {
     use sevenz_rust2::{ArchiveEntry, ArchiveWriter};
     let t = tempfile::tempdir().unwrap();

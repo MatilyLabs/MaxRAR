@@ -128,6 +128,19 @@ pub(super) fn inspect(path: &Path, secret: Option<&str>) -> Result<ArchiveInfo> 
     })
 }
 
+struct Counted<'a> {
+    inner: &'a mut dyn Read,
+    n: u64,
+}
+
+impl Read for Counted<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let n = self.inner.read(buf)?;
+        self.n += n as u64;
+        Ok(n)
+    }
+}
+
 /// Map callback entries back to their central inventory IDs without relying on names.
 /// The library passes references to its stable `archive.files` allocation.
 fn traverse(
@@ -157,7 +170,19 @@ fn traverse(
             .get(&(entry as *const ArchiveEntry as usize))
             .copied()
             .ok_or_else(|| sevenz_rust2::Error::Other("7z entry identity unavailable".into()))?;
-        match each(id, entry, stream) {
+        // The library checks a CRC only once the declared size has been read, so
+        // a wrong key whose garbage stream ends early would otherwise pass.
+        let mut counted = Counted { inner: stream, n: 0 };
+        let outcome = each(id, entry, &mut counted).and_then(|()| {
+            if entry.is_directory || counted.n == entry.size {
+                Ok(())
+            } else {
+                Err(invalid(
+                    "Decoded size does not match the archive. The password may be wrong or the archive damaged.",
+                ))
+            }
+        });
+        match outcome {
             Ok(()) => Ok(true),
             Err(e) => {
                 original = Some(e);
