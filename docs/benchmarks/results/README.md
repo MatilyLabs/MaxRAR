@@ -65,7 +65,7 @@ machine, same session. Size in MiB; create and extract in seconds (median of 3).
 
 What this shows, on this machine and these corpora:
 
-- **Text: 20 % smaller than 7-Zip -mx9 and xz -9, and about 37× faster to create.** PPMd is chosen for every unit.
+- **Text: 20 % smaller than 7-Zip -mx9 and xz -9, and about 38× faster to create.** PPMd is chosen for every unit.
 - **Small related files: smallest of all** (5 % below zstd -19, 8 % below 7-Zip), mostly from the compact index (MRAR/1's index alone was 19 % of its archive).
 - **Mixed text/random: within 0.1 % of 7-Zip -mx9, 4.6× faster to create, faster to extract.**
 - **node_modules: 6 % larger than 7-Zip -mx9.** 7-Zip's solid LZMA with a 64 MiB dictionary and its encoder still win on many similar source files.
