@@ -143,8 +143,18 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $bundle = 'target/${{ matrix.rust_target }}/release'
-          foreach ($f in @("$bundle/maxrar.exe") + (Get-ChildItem "$bundle/bundle/nsis/*.exe").FullName + 'target/explorer-menu/maxrar_shell.dll' + 'target/explorer-menu/maxrar-explorer-menu.msix') {
+          $setup = (Get-ChildItem 'target/${{ matrix.rust_target }}/release/bundle/nsis/*.exe').FullName
+          if (@($setup).Count -ne 1) { throw "Expected one NSIS installer; found $(@($setup).Count)" }
+          # Check the files users actually install: unpack the installer and verify what is inside.
+          $unpacked = Join-Path $env:RUNNER_TEMP 'signed-installer'
+          & "$env:ProgramFiles\7-Zip\7z.exe" x -y "-o$unpacked" $setup | Out-Null
+          if ($LASTEXITCODE) { throw "Could not unpack $setup" }
+          $inside = foreach ($name in 'maxrar.exe', 'maxrar_shell.dll') {
+            $found = @(Get-ChildItem $unpacked -Recurse -File -Filter $name)
+            if ($found.Count -eq 0) { throw "$name is missing from the installer" }
+            $found.FullName
+          }
+          foreach ($f in @($setup) + $inside + 'target/explorer-menu/maxrar_shell.dll' + 'target/explorer-menu/maxrar-explorer-menu.msix') {
             $sig = Get-AuthenticodeSignature -LiteralPath $f
             if ($sig.Status -ne 'Valid') { throw "$f signature: $($sig.Status)" }
             Write-Output "$([IO.Path]::GetFileName($f)): $($sig.SignerCertificate.Subject)"
