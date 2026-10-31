@@ -3,6 +3,8 @@
 use super::*;
 use std::io::{self, Cursor, Seek, SeekFrom};
 
+mod v2;
+
 const MAGIC: &[u8; 8] = b"MRAR\r\n\x1a\n";
 const HEADER: u64 = 16;
 const FOOTER: u64 = 32;
@@ -79,6 +81,119 @@ pub(super) fn detect(path: &Path) -> Result<bool> {
     Ok(n == 8 && &bytes == MAGIC)
 }
 
+/// The version-independent container: header, decoded index bytes, data range
+/// and the verified whole-container SHA-256.
+struct Envelope {
+    file: File,
+    version: u16,
+    index: Vec<u8>,
+    data_start: u64,
+    data_len: u64,
+    identity: String,
+    length: u64,
+}
+
+fn open_envelope(path: &Path, expected: Option<&str>, cancel: &AtomicBool) -> Result<Envelope> {
+    check(cancel)?;
+    let mut file = File::open(path)?;
+    let length = file.metadata()?.len();
+    let limits = Limits::default();
+    if length < HEADER + FOOTER
+        || length
+            > limits
+                .max_total_bytes
+                .saturating_add(INDEX_LIMIT as u64 + HEADER + FOOTER)
+    {
+        return Err(invalid("MRAR/0 archive length is outside format limits"));
+    }
+    let mut header = [0; 16];
+    file.read_exact(&mut header)?;
+    if &header[..8] != MAGIC {
+        return Err(invalid("Invalid MRAR/0 magic"));
+    }
+    let version = u16::from_le_bytes([header[8], header[9]]);
+    if version > v2::VERSION {
+        return Err(invalid("Unsupported MRAR version"));
+    }
+    let flags = u16::from_le_bytes([header[10], header[11]]);
+    if flags != version {
+        return Err(invalid("Unsupported MRAR version/flags combination"));
+    }
+    let index_len = u32::from_le_bytes(
+        header[12..16]
+            .try_into()
+            .map_err(|_| invalid("Invalid index length"))?,
+    ) as usize;
+    if index_len == 0 || index_len > INDEX_LIMIT {
+        return Err(invalid("MRAR/0 index exceeds 8 MiB limit or is empty"));
+    }
+    let data_start = HEADER
+        .checked_add(index_len as u64)
+        .filter(|n| *n <= length - FOOTER)
+        .ok_or_else(|| invalid("MRAR/0 index extends beyond archive"))?;
+    let mut bytes = vec![0; index_len];
+    file.read_exact(&mut bytes)?;
+    if version >= 1 {
+        if bytes.len() <= 4 {
+            return Err(invalid("Missing compressed MRAR index"));
+        }
+        let decoded = u32::from_le_bytes(bytes[..4].try_into().unwrap()) as usize;
+        if decoded == 0 || decoded > INDEX_LIMIT {
+            return Err(invalid("MRAR decoded index exceeds 8 MiB limit"));
+        }
+        bytes = decode_frame(bytes[4..].to_vec(), decoded as u64, 23)?;
+    }
+    // Verify footer before returning any entry data. Identity includes footer.
+    file.seek(SeekFrom::Start(0))?;
+    let mut hasher = Sha256::new();
+    let mut remaining = length - FOOTER;
+    let mut buf = vec![0; 1 << 20];
+    while remaining > 0 {
+        check(cancel)?;
+        let n = remaining.min(buf.len() as u64) as usize;
+        file.read_exact(&mut buf[..n])?;
+        hasher.update(&buf[..n]);
+        remaining -= n as u64;
+    }
+    let mut footer = [0; 32];
+    file.read_exact(&mut footer)?;
+    let calculated = hasher.clone().finalize();
+    if calculated.as_slice() != footer {
+        return Err(invalid("MRAR/0 whole-container SHA-256 mismatch"));
+    }
+    hasher.update(footer);
+    let identity = format!("{:x}", hasher.finalize());
+    if expected.is_some_and(|v| v != identity) {
+        return Err(invalid("Archive changed after review; generate a new plan"));
+    }
+    if file.metadata()?.len() != length {
+        return Err(invalid("Archive length changed while reading"));
+    }
+    Ok(Envelope {
+        file,
+        version,
+        index: bytes,
+        data_start,
+        data_len: length - FOOTER - data_start,
+        identity,
+        length,
+    })
+}
+
+/// An open archive of any supported version.
+enum Opened {
+    Legacy(Archive),
+    V2(v2::Archive2),
+}
+fn open_any(path: &Path, expected: Option<&str>, cancel: &AtomicBool) -> Result<Opened> {
+    let envelope = open_envelope(path, expected, cancel)?;
+    Ok(if envelope.version == v2::VERSION {
+        Opened::V2(v2::Archive2::open(envelope, path)?)
+    } else {
+        Opened::Legacy(Archive::from_envelope(envelope)?)
+    })
+}
+
 struct Archive {
     file: File,
     index: Index,
@@ -88,56 +203,16 @@ struct Archive {
     group_cache: Option<(usize, Vec<u8>)>,
 }
 impl Archive {
-    fn open(path: &Path, expected: Option<&str>, cancel: &AtomicBool) -> Result<Self> {
-        check(cancel)?;
-        let mut file = File::open(path)?;
-        let length = file.metadata()?.len();
-        let limits = Limits::default();
-        if length < HEADER + FOOTER
-            || length
-                > limits
-                    .max_total_bytes
-                    .saturating_add(INDEX_LIMIT as u64 + HEADER + FOOTER)
-        {
-            return Err(invalid("MRAR/0 archive length is outside format limits"));
-        }
-        let mut header = [0; 16];
-        file.read_exact(&mut header)?;
-        if &header[..8] != MAGIC {
-            return Err(invalid("Invalid MRAR/0 magic"));
-        }
-        let version = u16::from_le_bytes([header[8], header[9]]);
-        if version > 1 {
-            return Err(invalid("Unsupported MRAR version"));
-        }
-        let flags = u16::from_le_bytes([header[10], header[11]]);
-        if flags != version {
-            return Err(invalid("Unsupported MRAR version/flags combination"));
-        }
-        let index_len = u32::from_le_bytes(
-            header[12..16]
-                .try_into()
-                .map_err(|_| invalid("Invalid index length"))?,
-        ) as usize;
-        if index_len == 0 || index_len > INDEX_LIMIT {
-            return Err(invalid("MRAR/0 index exceeds 8 MiB limit or is empty"));
-        }
-        let data_start = HEADER
-            .checked_add(index_len as u64)
-            .filter(|n| *n <= length - FOOTER)
-            .ok_or_else(|| invalid("MRAR/0 index extends beyond archive"))?;
-        let mut bytes = vec![0; index_len];
-        file.read_exact(&mut bytes)?;
-        if version == 1 {
-            if bytes.len() <= 4 {
-                return Err(invalid("Missing compressed MRAR index"));
-            }
-            let decoded = u32::from_le_bytes(bytes[..4].try_into().unwrap()) as usize;
-            if decoded == 0 || decoded > INDEX_LIMIT {
-                return Err(invalid("MRAR decoded index exceeds 8 MiB limit"));
-            }
-            bytes = decode_frame(bytes[4..].to_vec(), decoded as u64, 23)?;
-        }
+    fn from_envelope(envelope: Envelope) -> Result<Self> {
+        let Envelope {
+            file,
+            version,
+            index: bytes,
+            data_start,
+            data_len,
+            identity,
+            length,
+        } = envelope;
         let index: Index = serde_json::from_slice(&bytes).map_err(json_error)?;
         if index.version != version {
             return Err(invalid("MRAR header/index version mismatch"));
@@ -153,33 +228,7 @@ impl Archive {
                 return Err(invalid("MRAR/0 cannot contain grouped fields"));
             }
         }
-        validate(&index, length - FOOTER - data_start)?;
-        // Verify footer before returning any entry data. Identity includes footer.
-        file.seek(SeekFrom::Start(0))?;
-        let mut hasher = Sha256::new();
-        let mut remaining = length - FOOTER;
-        let mut buf = [0; 65536];
-        while remaining > 0 {
-            check(cancel)?;
-            let n = remaining.min(buf.len() as u64) as usize;
-            file.read_exact(&mut buf[..n])?;
-            hasher.update(&buf[..n]);
-            remaining -= n as u64;
-        }
-        let mut footer = [0; 32];
-        file.read_exact(&mut footer)?;
-        let calculated = hasher.clone().finalize();
-        if calculated.as_slice() != footer {
-            return Err(invalid("MRAR/0 whole-container SHA-256 mismatch"));
-        }
-        hasher.update(footer);
-        let identity = format!("{:x}", hasher.finalize());
-        if expected.is_some_and(|v| v != identity) {
-            return Err(invalid("Archive changed after review; generate a new plan"));
-        }
-        if file.metadata()?.len() != length {
-            return Err(invalid("Archive length changed while reading"));
-        }
+        validate(&index, data_len)?;
         Ok(Self {
             file,
             index,
@@ -492,7 +541,10 @@ impl Read for EntryReader<'_> {
 
 pub(super) fn inspect(path: &Path) -> Result<ArchiveInfo> {
     let flag = AtomicBool::new(false);
-    let archive = Archive::open(path, None, &flag)?;
+    let archive = match open_any(path, None, &flag)? {
+        Opened::V2(archive) => return v2::inspect(archive, path),
+        Opened::Legacy(archive) => archive,
+    };
     let mut total = 0u64;
     let mut findings=vec![Finding{severity:"info".into(),code:"experimental_format".into(),message:format!("Experimental MRAR/{} is for disposable test data. It is not a stable backup or exchange format.",archive.index.version),entry_id:None},Finding{severity:"info".into(),code:"inspection_coverage".into(),message:"Bounded index and whole-container SHA-256 verified. Inventory does not decode every block or establish file integrity, sender authenticity or malware safety. Run Test for payload hashes. Grouped file sizes are proportional payload estimates; reading one member can decode its group (up to 8 MiB).".into(),entry_id:None}];
     let entries = archive
@@ -575,20 +627,28 @@ pub(super) fn entry_bytes(
     max: u64,
     cancel: &AtomicBool,
 ) -> Result<EntryBytes> {
-    let mut archive = Archive::open(path, None, cancel)?;
+    let mut archive = match open_any(path, None, cancel)? {
+        Opened::V2(mut archive) => return v2::entry_bytes(&mut archive, id, max, cancel),
+        Opened::Legacy(archive) => archive,
+    };
     let id = id.parse().map_err(|_| invalid("Invalid entry ID"))?;
     read_entry_prefix(&mut archive.reader(id, cancel)?, max, cancel)
 }
 
 /// Reuses one verified group across sequential byte-inspection calls.
-pub(super) struct InspectionSession(Archive);
+pub(super) struct InspectionSession(Opened);
 impl InspectionSession {
     pub(super) fn open(path: &Path, identity: &str, cancel: &AtomicBool) -> Result<Self> {
-        Ok(Self(Archive::open(path, Some(identity), cancel)?))
+        Ok(Self(open_any(path, Some(identity), cancel)?))
     }
     pub(super) fn read(&mut self, id: &str, max: u64, cancel: &AtomicBool) -> Result<EntryBytes> {
-        let id = id.parse().map_err(|_| invalid("Invalid entry ID"))?;
-        read_entry_prefix(&mut self.0.reader(id, cancel)?, max, cancel)
+        match &mut self.0 {
+            Opened::V2(archive) => v2::entry_bytes(archive, id, max, cancel),
+            Opened::Legacy(archive) => {
+                let id = id.parse().map_err(|_| invalid("Invalid entry ID"))?;
+                read_entry_prefix(&mut archive.reader(id, cancel)?, max, cancel)
+            }
+        }
     }
 }
 
@@ -677,7 +737,10 @@ pub(super) fn test(
     cancel: &AtomicBool,
     progress: &dyn Fn(Progress),
 ) -> Result<Receipt> {
-    let archive = Archive::open(path, None, cancel)?;
+    let archive = match open_any(path, None, cancel)? {
+        Opened::V2(archive) => return v2::test(archive, cancel, progress),
+        Opened::Legacy(archive) => archive,
+    };
     let entries = &archive.index.entries;
     let total = entries.iter().map(|e| e.size).sum();
     let count = entries.len();
@@ -770,11 +833,14 @@ pub(super) fn extract(
     cancel: &AtomicBool,
     progress: &dyn Fn(Progress),
 ) -> Result<Receipt> {
-    let mut archive = Archive::open(
+    let mut archive = match open_any(
         Path::new(&p.archive_path),
         Some(&p.archive_identity),
         cancel,
-    )?;
+    )? {
+        Opened::V2(archive) => return v2::extract(archive, p, root, cancel, progress),
+        Opened::Legacy(archive) => archive,
+    };
     let mut r = Receipt {
         operation: "extract".into(),
         destination: Some(p.destination.clone()),
@@ -894,8 +960,8 @@ fn sources(output: &Path, inputs: &[PathBuf], cancel: &AtomicBool) -> Result<Vec
 }
 /// Worker threads for MRAR compression and verification. `MAXRAR_THREADS`
 /// overrides the default (available cores, at most 16). Output bytes do not
-/// depend on the thread count: every unit is compressed independently with
-/// fixed parameters and written in input order.
+/// depend on the thread count: every unit is compressed independently and
+/// written in input order.
 fn worker_threads() -> usize {
     std::env::var("MAXRAR_THREADS")
         .ok()
@@ -905,58 +971,37 @@ fn worker_threads() -> usize {
         .min(16)
 }
 
-/// A group of small files or one block of a large file, compressed on its own.
-struct Unit {
-    seq: usize,
-    bytes: Vec<u8>,
-    group: bool,
-}
-type Compressed = (usize, Codec, Vec<u8>, u64, String);
-
-/// Where a compressed unit landed in the data section.
-struct Placed {
-    codec: Codec,
+/// Where a compressed unit landed in the data section, with the worker's metadata.
+struct Placed<R> {
     offset: u64,
     encoded_size: u64,
-    decoded_size: u64,
-    sha256: String,
-}
-impl Placed {
-    fn block(&self) -> Block {
-        Block {
-            codec: match self.codec {
-                Codec::Store => Codec::Store,
-                Codec::Zstd => Codec::Zstd,
-            },
-            offset: self.offset,
-            encoded_size: self.encoded_size,
-            decoded_size: self.decoded_size,
-            sha256: self.sha256.clone(),
-        }
-    }
+    meta: R,
 }
 
+type Work<'w, R> = dyn Fn(Vec<u8>) -> Result<(Vec<u8>, R)> + Sync + 'w;
+
 /// Compresses units on worker threads and writes them to the data file in
-/// sequence order. At most `threads + 2` units are in flight, which bounds
-/// memory to roughly that many 8 MiB groups plus their encoded copies.
-struct Pipeline<'s> {
-    jobs: Option<std::sync::mpsc::SyncSender<Unit>>,
+/// submission order. At most `threads + 2` units are in flight, which bounds
+/// memory to that many units plus their encoded copies.
+struct Pipeline<'s, R> {
+    jobs: Option<std::sync::mpsc::SyncSender<(usize, Vec<u8>)>>,
     permits: std::sync::mpsc::Receiver<()>,
     next: usize,
-    writer: std::thread::ScopedJoinHandle<'s, Result<Vec<Placed>>>,
+    writer: std::thread::ScopedJoinHandle<'s, Result<Vec<Placed<R>>>>,
 }
-impl<'s> Pipeline<'s> {
+impl<'s, R: Send + 's> Pipeline<'s, R> {
     fn start(
         scope: &'s std::thread::Scope<'s, '_>,
         data: &'s mut File,
         cancel: &'s AtomicBool,
         threads: usize,
+        work: &'s Work<'s, R>,
     ) -> Self {
         use std::sync::mpsc::{channel, sync_channel};
         use std::sync::{Arc, Mutex};
-        let (jobs, job_rx) = sync_channel::<Unit>(threads);
+        let (jobs, job_rx) = sync_channel::<(usize, Vec<u8>)>(threads);
         let job_rx = Arc::new(Mutex::new(job_rx));
-        let (done_tx, done_rx) = channel::<Result<Compressed>>();
+        let (done_tx, done_rx) = channel::<(usize, Result<(Vec<u8>, R)>)>();
         let in_flight = threads + 2;
         let (permit_tx, permits) = sync_channel::<()>(in_flight);
         for _ in 0..in_flight {
@@ -965,60 +1010,33 @@ impl<'s> Pipeline<'s> {
         for _ in 0..threads {
             let job_rx = Arc::clone(&job_rx);
             let done_tx = done_tx.clone();
-            scope.spawn(move || {
-                let mut contexts = None;
-                loop {
-                    let unit = match job_rx.lock() {
-                        Ok(rx) => rx.recv(),
-                        Err(_) => return,
-                    };
-                    let Ok(unit) = unit else { return };
-                    let result = (|| -> Result<Compressed> {
-                        check(cancel)?;
-                        if contexts.is_none() {
-                            let mut block = zstd::bulk::Compressor::new(3)?;
-                            block.set_parameter(zstd::zstd_safe::CParameter::WindowLog(20))?;
-                            let mut group = zstd::bulk::Compressor::new(3)?;
-                            group.set_parameter(zstd::zstd_safe::CParameter::WindowLog(23))?;
-                            contexts = Some((block, group));
-                        }
-                        let (block, group) = contexts.as_mut().expect("contexts set above");
-                        let compressor = if unit.group { group } else { block };
-                        let compressed = compressor.compress(&unit.bytes)?;
-                        let sha256 = digest(&unit.bytes);
-                        let decoded = unit.bytes.len() as u64;
-                        Ok(if compressed.len() < unit.bytes.len() {
-                            (unit.seq, Codec::Zstd, compressed, decoded, sha256)
-                        } else {
-                            (unit.seq, Codec::Store, unit.bytes, decoded, sha256)
-                        })
-                    })();
-                    if done_tx.send(result).is_err() {
-                        return;
-                    }
+            scope.spawn(move || loop {
+                let job = match job_rx.lock() {
+                    Ok(rx) => rx.recv(),
+                    Err(_) => return,
+                };
+                let Ok((seq, bytes)) = job else { return };
+                let result = check(cancel).and_then(|()| work(bytes));
+                if done_tx.send((seq, result)).is_err() {
+                    return;
                 }
             });
         }
         drop(done_tx);
-        let writer = scope.spawn(move || -> Result<Vec<Placed>> {
+        let writer = scope.spawn(move || -> Result<Vec<Placed<R>>> {
             let mut pending = std::collections::BTreeMap::new();
-            let mut placed: Vec<Placed> = Vec::new();
+            let mut placed: Vec<Placed<R>> = Vec::new();
             let mut offset = 0u64;
-            for result in done_rx {
-                let (seq, codec, encoded, decoded_size, sha256) = result?;
-                pending.insert(seq, (codec, encoded, decoded_size, sha256));
-                while let Some((codec, encoded, decoded_size, sha256)) =
-                    pending.remove(&placed.len())
-                {
+            for (seq, result) in done_rx {
+                pending.insert(seq, result?);
+                while let Some((encoded, meta)) = pending.remove(&placed.len()) {
                     check(cancel)?;
                     data.write_all(&encoded)?;
                     let encoded_size = encoded.len() as u64;
                     placed.push(Placed {
-                        codec,
                         offset,
                         encoded_size,
-                        decoded_size,
-                        sha256,
+                        meta,
                     });
                     offset = offset
                         .checked_add(encoded_size)
@@ -1041,20 +1059,19 @@ impl<'s> Pipeline<'s> {
             writer,
         }
     }
-    /// Queues a unit and returns its sequence number. Blocks while the pipeline is full.
-    fn submit(&mut self, bytes: Vec<u8>, group: bool) -> Result<usize> {
-        let seq = self.next;
+    /// Queues a unit. Blocks while the pipeline is full.
+    fn submit(&mut self, bytes: Vec<u8>) -> Result<()> {
         let stopped = || invalid("MRAR compression stopped");
         self.permits.recv().map_err(|_| stopped())?;
         self.jobs
             .as_ref()
             .ok_or_else(stopped)?
-            .send(Unit { seq, bytes, group })
+            .send((self.next, bytes))
             .map_err(|_| stopped())?;
         self.next += 1;
-        Ok(seq)
+        Ok(())
     }
-    fn finish(mut self) -> Result<Vec<Placed>> {
+    fn finish(mut self) -> Result<Vec<Placed<R>>> {
         self.jobs = None;
         let placed = self
             .writer
@@ -1067,185 +1084,33 @@ impl<'s> Pipeline<'s> {
     }
 }
 
-pub(super) fn create(
+/// Writes header, compressed index, data and footer in one pass, self-tests the
+/// staged archive and publishes it without replacing an existing file.
+#[allow(clippy::too_many_arguments)]
+fn write_container(
+    parent: &Path,
     output: &Path,
-    inputs: &[PathBuf],
+    version: u16,
+    index: &[u8],
+    encoded_index: &[u8],
+    data: &mut File,
+    data_len: u64,
     cancel: &AtomicBool,
-    progress: &dyn Fn(Progress),
-    password: Option<&str>,
 ) -> Result<ArchiveInfo> {
-    create_with_threads(output, inputs, cancel, progress, password, worker_threads())
-}
-
-fn create_with_threads(
-    output: &Path,
-    inputs: &[PathBuf],
-    cancel: &AtomicBool,
-    progress: &dyn Fn(Progress),
-    password: Option<&str>,
-    threads: usize,
-) -> Result<ArchiveInfo> {
-    check(cancel)?;
-    if password.is_some() {
-        return Err(invalid(
-            "Experimental MRAR does not support encryption. Choose ZIP or 7z.",
-        ));
-    }
-    let output = absolute(output)?;
-    let parent = output
-        .parent()
-        .ok_or_else(|| invalid("No output directory"))?
-        .canonicalize()?;
-    let output = parent.join(
-        output
-            .file_name()
-            .ok_or_else(|| invalid("No output filename"))?,
-    );
-    let sources = sources(&output, inputs, cancel)?;
-    let count = sources.len();
-    let total = sources.iter().map(|s| s.size).sum();
-    let mut data = NamedTempFile::new_in(&parent)?;
-
-    // Records refer to units by sequence number until the writer has placed them.
-    let mut records: Vec<(Record, Vec<usize>)> = Vec::new();
-    let mut group_units: Vec<usize> = Vec::new();
-    let placed = std::thread::scope(|scope| -> Result<Vec<Placed>> {
-        let mut pipeline = Pipeline::start(scope, data.as_file_mut(), cancel, threads);
-        let mut group_bytes = Vec::new();
-        let mut completed = 0u64;
-        let produced = (|| -> Result<()> {
-            for (i, source) in sources.into_iter().enumerate() {
-                check(cancel)?;
-                let mut record = Record {
-                    path: source.name.clone(),
-                    kind: if source.dir {
-                        Kind::Directory
-                    } else {
-                        Kind::File
-                    },
-                    size: source.size,
-                    sha256: String::new(),
-                    blocks: Vec::new(),
-                    group: None,
-                };
-                let mut blocks = Vec::new();
-                if !source.dir && source.size > 0 && source.size <= SMALL_FILE_LIMIT {
-                    if group_bytes.len() as u64 + source.size > GROUP_LIMIT {
-                        group_units.push(pipeline.submit(std::mem::take(&mut group_bytes), true)?);
-                    }
-                    let mut bytes = Vec::new();
-                    File::open(&source.path)?
-                        .take(source.size + 1)
-                        .read_to_end(&mut bytes)?;
-                    if bytes.len() as u64 != source.size {
-                        return Err(invalid("MRAR source size changed while compressing"));
-                    }
-                    record.sha256 = digest(&bytes);
-                    record.group = Some(Span {
-                        id: group_units.len(),
-                        offset: group_bytes.len() as u64,
-                    });
-                    group_bytes.extend_from_slice(&bytes);
-                    completed += source.size;
-                    progress(Progress {
-                        operation: "create".into(),
-                        entry: source.name.clone(),
-                        completed_entries: i,
-                        total_entries: count,
-                        bytes_processed: completed,
-                        total_bytes: total,
-                    });
-                } else if !source.dir {
-                    if !group_bytes.is_empty() {
-                        group_units.push(pipeline.submit(std::mem::take(&mut group_bytes), true)?);
-                    }
-                    let mut file = File::open(&source.path)?;
-                    let mut hasher = Sha256::new();
-                    let mut decoded = 0u64;
-                    loop {
-                        check(cancel)?;
-                        let mut bytes = vec![0; BLOCK_LIMIT as usize];
-                        let mut n = 0usize;
-                        while n < bytes.len() {
-                            check(cancel)?;
-                            let got = file.read(&mut bytes[n..])?;
-                            if got == 0 {
-                                break;
-                            }
-                            n += got;
-                        }
-                        bytes.truncate(n);
-                        if n == 0 {
-                            break;
-                        }
-                        decoded = decoded
-                            .checked_add(n as u64)
-                            .filter(|v| *v <= source.size)
-                            .ok_or_else(|| invalid("MRAR source grew while compressing"))?;
-                        hasher.update(&bytes);
-                        blocks.push(pipeline.submit(bytes, false)?);
-                        progress(Progress {
-                            operation: "create".into(),
-                            entry: source.name.clone(),
-                            completed_entries: i,
-                            total_entries: count,
-                            bytes_processed: completed + decoded,
-                            total_bytes: total,
-                        });
-                    }
-                    if decoded != source.size {
-                        return Err(invalid("MRAR source size changed while compressing"));
-                    }
-                    record.sha256 = format!("{:x}", hasher.finalize());
-                    completed += decoded;
-                }
-                records.push((record, blocks));
-            }
-            if !group_bytes.is_empty() {
-                group_units.push(pipeline.submit(std::mem::take(&mut group_bytes), true)?);
-            }
-            Ok(())
-        })();
-        // Always stop the workers. A writer error explains a failed submit best.
-        let finished = pipeline.finish();
-        finished.and_then(|placed| produced.map(|()| placed))
-    })?;
-
-    let mut index = Index {
-        version: 1,
-        entries: Vec::with_capacity(records.len()),
-        groups: group_units.iter().map(|&u| placed[u].block()).collect(),
-    };
-    for (mut record, blocks) in records {
-        record.blocks = blocks.iter().map(|&u| placed[u].block()).collect();
-        index.entries.push(record);
-    }
-    let data_len = placed.last().map_or(0, |p| p.offset + p.encoded_size);
-    let bytes = serde_json::to_vec(&index).map_err(json_error)?;
-    if bytes.len() > INDEX_LIMIT {
-        return Err(invalid("MRAR index exceeds 8 MiB limit"));
-    }
-    validate(&index, data_len)?;
-    let mut index_compressor = zstd::bulk::Compressor::new(3)?;
-    index_compressor.set_parameter(zstd::zstd_safe::CParameter::WindowLog(23))?;
-    let encoded_index = index_compressor.compress(&bytes)?;
     if encoded_index.len() + 4 > INDEX_LIMIT {
         return Err(invalid("MRAR encoded index exceeds 8 MiB limit"));
     }
-
-    // Write header, index and data once, hashing on the way for the footer.
-    let mut stage = NamedTempFile::new_in(&parent)?;
+    let mut stage = NamedTempFile::new_in(parent)?;
     let mut head = Vec::with_capacity(HEADER as usize + 4 + encoded_index.len());
     head.extend_from_slice(MAGIC);
-    head.extend_from_slice(&1u16.to_le_bytes());
-    head.extend_from_slice(&1u16.to_le_bytes());
+    head.extend_from_slice(&version.to_le_bytes());
+    head.extend_from_slice(&version.to_le_bytes());
     head.extend_from_slice(&((encoded_index.len() + 4) as u32).to_le_bytes());
-    head.extend_from_slice(&(bytes.len() as u32).to_le_bytes());
-    head.extend_from_slice(&encoded_index);
+    head.extend_from_slice(&(index.len() as u32).to_le_bytes());
+    head.extend_from_slice(encoded_index);
     let mut hasher = Sha256::new();
     hasher.update(&head);
     stage.write_all(&head)?;
-    let data = data.as_file_mut();
     data.seek(SeekFrom::Start(0))?;
     let mut buffer = vec![0; 1 << 20];
     let mut copied = 0u64;
@@ -1267,9 +1132,26 @@ fn create_with_threads(
     test(stage.path(), cancel, &|_| {})?;
     check(cancel)?;
     stage
-        .persist_noclobber(&output)
+        .persist_noclobber(output)
         .map_err(|e| invalid(format!("MRAR archive was not published: {}", e.error)))?;
-    inspect(&output)
+    inspect(output)
+}
+
+/// Writes MRAR/2. Readers still accept MRAR/0 and MRAR/1.
+pub(super) fn create(
+    output: &Path,
+    inputs: &[PathBuf],
+    cancel: &AtomicBool,
+    progress: &dyn Fn(Progress),
+    password: Option<&str>,
+) -> Result<ArchiveInfo> {
+    check(cancel)?;
+    if password.is_some() {
+        return Err(invalid(
+            "Experimental MRAR does not support encryption. Choose ZIP or 7z.",
+        ));
+    }
+    v2::create(output, inputs, cancel, progress, worker_threads())
 }
 
 #[cfg(test)]
@@ -1281,8 +1163,8 @@ mod tests {
         let t = tempfile::tempdir().unwrap();
         let src = t.path().join("src");
         std::fs::create_dir_all(src.join("small")).unwrap();
-        // Small files fill several groups; the large file spans many blocks,
-        // one of them incompressible so both codecs appear.
+        // About 21 MiB of mixed small and large files: two MRAR/2 units, with
+        // an incompressible tail and an empty file.
         for i in 0..900 {
             let body = format!("record {i} ").repeat(1 + i % 200);
             std::fs::write(src.join("small").join(format!("{i:04}.txt")), body).unwrap();
@@ -1303,15 +1185,7 @@ mod tests {
         let mut archives = Vec::new();
         for threads in [1, 3, 7] {
             let out = t.path().join(format!("t{threads}.mrar"));
-            create_with_threads(
-                &out,
-                std::slice::from_ref(&src),
-                &cancel,
-                &|_| {},
-                None,
-                threads,
-            )
-            .unwrap();
+            v2::create(&out, std::slice::from_ref(&src), &cancel, &|_| {}, threads).unwrap();
             archives.push(std::fs::read(&out).unwrap());
         }
         assert!(archives.iter().all(|a| *a == archives[0]));

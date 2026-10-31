@@ -47,3 +47,30 @@ for 7-Zip) is dominated by the per-file `sync_all` in `write_planned`
 
 MRAR/1 now writes text at 0.46 s (tar+zstd -3 with 28 threads: 0.26 s; 7-Zip -mx9: 138 s), but its ratio is zstd-3
 class. The ratio gap (up to 35 % on text) is the work of the next phases.
+
+## MRAR/2 (solid units, codec chosen per unit)
+
+`*-mrar-v2.*` (all corpora) and `*-mrar-v2-random.*` (random corpus re-run on
+its own: the first run followed the mixed corpus and its times were inflated by
+disk activity; sizes were identical). Other tools from `*-baseline.*`, same
+machine, same session. Size in MiB; create and extract in seconds (median of 3).
+
+| Corpus | MRAR/2 | 7z -mx9 | tar+xz -9 | tar+zstd -19 | 7z -mx5 |
+| --- | --- | --- | --- | --- | --- |
+| text (256 MiB) | **28.84** · 3.6 · 1.7 | 35.94 · 138 · 1.5 | 35.82 · 133 · 1.2 | 38.05 · 32 · 0.3 | 39.06 · 48 · 0.8 |
+| small-files (64 MiB) | **0.421** · 2.3 · 6.2 | 0.457 · 5.4 · 1.7 | 0.457 · 5.1 · 1.2 | 0.442 · 3.3 · 1.0 | 0.461 · 4.3 · 1.7 |
+| mixed (256 MiB) | 146.56 · 15.7 · 0.6 | **146.43** · 72 · 1.0 | 146.80 · 120 · 0.8 | 147.74 · 18 · 0.3 | 147.83 · 23 · 0.6 |
+| random (128 MiB) | **128.000** · 0.4 · 0.9 | 128.008 · 11 · 0.2 | 128.007 · 65 · 0.3 | 128.003 · 8 · 0.2 | 128.008 · 9 · 0.2 |
+| node_modules (71 MiB) | 14.67 · 5.6 · 3.2 | **13.83** · 10.3 · 1.5 | 13.98 · 19 · 0.6 | 15.69 · 8.4 · 0.5 | 14.05 · 9.0 · 1.5 |
+
+What this shows, on this machine and these corpora:
+
+- **Text: 20 % smaller than 7-Zip -mx9 and xz -9, and about 37× faster to create.** PPMd is chosen for every unit.
+- **Small related files: smallest of all** (5 % below zstd -19, 8 % below 7-Zip), mostly from the compact index (MRAR/1's index alone was 19 % of its archive).
+- **Mixed text/random: within 0.1 % of 7-Zip -mx9, 4.6× faster to create, faster to extract.**
+- **node_modules: 6 % larger than 7-Zip -mx9.** 7-Zip's solid LZMA with a 64 MiB dictionary and its encoder still win on many similar source files.
+- **Extraction is slower than 7-Zip on many small files** (per-file `sync_all`, shared by every format) and on node_modules.
+- Peak create memory reaches about 2.5 GiB on mixed data with 12 threads (7-Zip -mx9: 2.6 GiB). Thread count is capped by available memory; archive bytes do not depend on it.
+
+Single machine, warm cache, synthetic corpora plus one real tree. Not yet run:
+Silesia, enwik, Linux kernel source, a second machine, cold cache.
