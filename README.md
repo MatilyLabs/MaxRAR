@@ -127,7 +127,7 @@ Scan the archive or a selection. Results distinguish warning indicators and insp
 | 7z | Yes, for enabled codecs | LZMA2; optional AES-256 |
 | TAR, TAR.GZ, TAR.BZ2, TAR.XZ, TAR.ZST | Yes, for supported variants | Yes |
 | GZ, BZ2, XZ, ZST | Single decoded file | Single input file |
-| MRAR (`.mrar`) | Experimental /0 and /1 | Experimental /1 |
+| MRAR (`.mrar`) | Experimental /0, /1 and /2 | Experimental /2 |
 | ZIP-based JAR, OpenDocument, WHL, NPZ and modern ZIP-based checkpoints | Generic container operations | Generic ZIP creation |
 | RAR4 / RAR5 (single volume) | Yes, including supported solid and encrypted archives | Not supported |
 
@@ -141,35 +141,47 @@ ZIP supports staged deletion and comment edits. Other formats currently have mor
 
 **MaxRAR’s own archive format, with shared compression and built-in integrity checks.**
 
-MRAR/1 groups related small files, compresses the archive index, and verifies
-content with SHA-256 checks. MaxRAR can create, browse, preview, test and extract
-`.mrar` archives, and still reads legacy MRAR/0 files.
+MRAR/2 compresses files together in 16 MiB blocks. For each block it tests
+small samples and picks the method that fits the data: PPMd for text, LZMA2
+for binaries and similar files, or no compression for data that won’t shrink.
+Every block carries a SHA-256 check. MaxRAR can create, browse, preview, test
+and extract `.mrar` archives, and still reads MRAR/0 and MRAR/1 files.
 
-### Compression snapshot: 1 GiB of generated text
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/benchmarks/headline-dark.svg">
+  <img alt="MRAR/2 at a glance: 20% smaller than 7-Zip -mx9 on 256 MiB of text and 38 times faster to create; 5% smaller than the best other tool on 4,096 small files; 6% larger than 7-Zip -mx9 on a real node_modules folder." src="docs/assets/benchmarks/headline-light.svg" width="880">
+</picture>
 
-In this exploratory test, MRAR/1 produced a **27.6 MiB archive — 53.5% smaller than ZIP**.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/benchmarks/size-dark.svg">
+  <img alt="Archive size by corpus. Text: MRAR/2 28.84 MiB, xz -9 35.82, 7-Zip -mx9 35.94. Small files: MRAR/2 0.421 MiB, zstd -19 0.442, 7-Zip -mx9 0.457. Mixed: 7-Zip -mx9 146.4 MiB, MRAR/2 146.6. node_modules: 7-Zip -mx9 13.83 MiB, MRAR/2 14.67." src="docs/assets/benchmarks/size-light.svg" width="880">
+</picture>
 
-| Format | Archive size | Create time |
-| --- | ---: | ---: |
-| **MRAR/1** | **27.6 MiB** | **22.1 s** |
-| ZIP | 59.4 MiB | 6.0 s |
-| 7z | 26.3 MiB | 302.2 s |
-| TAR.ZST | 30.4 MiB | 3.8 s |
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/benchmarks/tradeoff-dark.svg">
+  <img alt="Archive size against create time. On text, MRAR/2 is both the smallest and among the fastest, at 3.6 seconds against 138 seconds for 7-Zip -mx9. On node_modules, 7-Zip -mx9 and xz -9 are smaller but slower; MRAR/2 is on the speed-size frontier." src="docs/assets/benchmarks/tradeoff-light.svg" width="880">
+</picture>
 
-Measured with MaxRAR’s optimized Rust core on an Intel Mac. One trial per
-profile on the same retained synthetic input; MRAR/1 was measured after the
-other profiles. These are MaxRAR writer timings, including inventory and
-verification work. Results vary with files and settings.
-[See all four workloads, settings and exact measurements](docs/benchmarks/MRAR-COMPARISON.md).
+**Where it wins:** text (20% smaller than 7-Zip -mx9 and xz -9) and many small
+related files (smallest of all tools tested). Mixed text and random data is a
+tie with 7-Zip -mx9 at a fifth of the create time.
 
-Shared compression also reduced our related-small-file fixture by **94.6%**
-compared with MRAR/0. Grouping can increase memory use and the work needed to
-read an individual file.
+**Where it doesn’t yet:** a real `node_modules` folder is 6% larger than 7-Zip
+-mx9. Extracting thousands of small files is slower than 7-Zip, because MaxRAR
+flushes every file to disk. Creating archives can use up to about 2.5 GiB of
+memory on a large machine; fewer threads are used when memory is short.
+
+Measured on one Windows 11 PC (Intel Core i7-14700F, 32 GB), warm cache,
+median of 3 trials, with every archive extracted and checked byte for byte.
+Most inputs are generated test data; standard corpora such as Silesia and a
+second machine are still to come. Results vary with files and settings.
+[Raw results and method](docs/benchmarks/results/README.md) ·
+regenerate the charts with `python scripts/benchmark/make_charts.py`.
 
 **MRAR is experimental.** Keep your originals; use established formats when you
 need stable exchange or backups.
 
-[MRAR/1 specification](docs/MRAR-1-SPEC.md) · [Legacy MRAR/0 specification](docs/MRAR-0-SPEC.md)
+[MRAR/2 specification](docs/MRAR-2-SPEC.md) · [MRAR/1 specification](docs/MRAR-1-SPEC.md) · [Legacy MRAR/0 specification](docs/MRAR-0-SPEC.md)
 
 ## Run locally
 

@@ -1,0 +1,26 @@
+{
+  "seed": 20261015,
+  "scale": 1.0,
+  "corpora": {
+    "mixed": {
+      "bytes": 268435456,
+      "files": 1,
+      "sha256": "860828f3a37f65b23373dc7d79180f9414ed7ee4d9dd79e61b931f89dadcdbd3"
+    },
+    "random": {
+      "bytes": 134217728,
+      "files": 1,
+      "sha256": "16e4bea6cb8b6a5f3737b8f76a50d3bb4419753be968032ec4f85baf3de2eab4"
+    },
+    "small-files": {
+      "bytes": 67108864,
+      "files": 4096,
+      "sha256": "8975dc3f3fae1c228c7223e0e10e69165c7e8cb74a1642383cc60ea67f4f0555"
+    },
+    "text": {
+      "bytes": 268435456,
+      "files": 1,
+      "sha256": "6a8fecea82760f90dee57b1289d92fcfa71688b2b1e2cc98fba17c2f2a00b446"
+    }
+  }
+}

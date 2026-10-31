@@ -1,0 +1,36 @@
+{
+  "environment": {
+    "date": "2026-10-31T09:54:18+00:00",
+    "os": "Windows-11-10.0.26200-SP0",
+    "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "logical_cpus": 28,
+    "ram_gib": 31.8,
+    "python": "3.12.10",
+    "threads": 28
+  },
+  "tools": {
+    "mrar": "maxrar-cli 0.1.1"
+  },
+  "corpora": {
+    "random": "target/bench-corpora/random"
+  },
+  "summary": [
+    {
+      "corpus": "random",
+      "tool": "mrar",
+      "label": "MRAR (MaxRAR)",
+      "trials": 3,
+      "input_bytes": 134217728,
+      "archive_bytes": 134218100,
+      "ratio": 1.000002771615982,
+      "create_s": 0.4326837999979034,
+      "create_min": 0.40904260001843795,
+      "create_max": 1.2867891000350937,
+      "extract_s": 0.9362502999720164,
+      "create_peak_mib": 138.671875,
+      "extract_peak_mib": 137.2265625,
+      "roundtrip_ok": true,
+      "deterministic_size": true
+    }
+  ]
+}

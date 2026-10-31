@@ -2949,6 +2949,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "maxrar-shell"
+version = "0.1.2"
+dependencies = [
+ "windows",
+ "windows-core",
+]
+
+[[package]]
 name = "maybe-owned"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6699,7 +6707,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wonrar-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "ctrlc",
@@ -6723,6 +6731,7 @@ dependencies = [
  "fs2",
  "libc",
  "lzma-rust2",
+ "ppmd-rust",
  "serde",
  "serde_json",
  "sevenz-rust2",
@@ -6740,7 +6749,7 @@ dependencies = [
 
 [[package]]
 name = "wonrar-desktop"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "base64 0.22.1",
  "minisign-verify",
@@ -6762,7 +6771,7 @@ dependencies = [
 
 [[package]]
 name = "wonrar-inspect"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "reqwest 0.12.28",
  "serde",
@@ -6773,7 +6782,7 @@ dependencies = [
 
 [[package]]
 name = "wonrar-scan"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "flate2",
  "libc",

@@ -1,0 +1,108 @@
+{
+  "environment": {
+    "date": "2026-10-31T09:53:51+00:00",
+    "os": "Windows-11-10.0.26200-SP0",
+    "cpu": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "logical_cpus": 28,
+    "ram_gib": 31.8,
+    "python": "3.12.10",
+    "threads": 28
+  },
+  "tools": {
+    "mrar": "maxrar-cli 0.1.1"
+  },
+  "corpora": {
+    "mixed": "target/bench-corpora/mixed",
+    "random": "target/bench-corpora/random",
+    "small-files": "target/bench-corpora/small-files",
+    "text": "target/bench-corpora/text",
+    "node_modules": "<repo>/node_modules"
+  },
+  "summary": [
+    {
+      "corpus": "mixed",
+      "tool": "mrar",
+      "label": "MRAR (MaxRAR)",
+      "trials": 3,
+      "input_bytes": 268435456,
+      "archive_bytes": 153683468,
+      "ratio": 0.572515532374382,
+      "create_s": 15.738135599996895,
+      "create_min": 15.683781299972907,
+      "create_max": 16.401773000019602,
+      "extract_s": 0.590567999985069,
+      "create_peak_mib": 2553.9765625,
+      "extract_peak_mib": 505.35546875,
+      "roundtrip_ok": true,
+      "deterministic_size": true
+    },
+    {
+      "corpus": "random",
+      "tool": "mrar",
+      "label": "MRAR (MaxRAR)",
+      "trials": 3,
+      "input_bytes": 134217728,
+      "archive_bytes": 134218100,
+      "ratio": 1.000002771615982,
+      "create_s": 2.152786099992227,
+      "create_min": 0.9236246999935247,
+      "create_max": 2.3552687999908812,
+      "extract_s": 1.2755519000347704,
+      "create_peak_mib": 138.55078125,
+      "extract_peak_mib": 137.34375,
+      "roundtrip_ok": true,
+      "deterministic_size": true
+    },
+    {
+      "corpus": "small-files",
+      "tool": "mrar",
+      "label": "MRAR (MaxRAR)",
+      "trials": 3,
+      "input_bytes": 67108864,
+      "archive_bytes": 441577,
+      "ratio": 0.0065800100564956665,
+      "create_s": 2.265719100018032,
+      "create_min": 2.2348818000173196,
+      "create_max": 2.460287399997469,
+      "extract_s": 6.22773009998491,
+      "create_peak_mib": 759.52734375,
+      "extract_peak_mib": 92.5625,
+      "roundtrip_ok": true,
+      "deterministic_size": true
+    },
+    {
+      "corpus": "text",
+      "tool": "mrar",
+      "label": "MRAR (MaxRAR)",
+      "trials": 3,
+      "input_bytes": 268435456,
+      "archive_bytes": 30236984,
+      "ratio": 0.11264154314994812,
+      "create_s": 3.6218073000200093,
+      "create_min": 3.5428823999827728,
+      "create_max": 3.6311808999744244,
+      "extract_s": 1.710944999998901,
+      "create_peak_mib": 717.3125,
+      "extract_peak_mib": 472.828125,
+      "roundtrip_ok": true,
+      "deterministic_size": true
+    },
+    {
+      "corpus": "node_modules",
+      "tool": "mrar",
+      "label": "MRAR (MaxRAR)",
+      "trials": 3,
+      "input_bytes": 74720806,
+      "archive_bytes": 15383749,
+      "ratio": 0.2058830709079878,
+      "create_s": 5.641508199973032,
+      "create_min": 5.597723500046413,
+      "create_max": 5.7933258000412025,
+      "extract_s": 3.220204000012018,
+      "create_peak_mib": 807.10546875,
+      "extract_peak_mib": 128.11328125,
+      "roundtrip_ok": true,
+      "deterministic_size": true
+    }
+  ]
+}

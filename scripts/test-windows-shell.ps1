@@ -14,6 +14,15 @@ foreach ($entry in @(@('*','MaxRAR.Compress','compress'),@('Directory','MaxRAR.C
 }
 $shortcut = Join-Path ([Environment]::GetFolderPath('SendTo')) 'Compress with MaxRAR.lnk'
 if (!(Test-Path $shortcut)) { throw 'Send To shortcut missing' }
+$menuPackage = Join-Path $install 'maxrar-explorer-menu.msix'
+if (Test-Path $menuPackage) {
+    if (!(Test-Path (Join-Path $install 'maxrar_shell.dll'))) { throw 'Explorer menu DLL missing' }
+    if ((Get-AuthenticodeSignature -LiteralPath $menuPackage).Status -eq 'Valid') {
+        if (!(Get-AppxPackage -Name Matily.MaxRAR.ExplorerMenu)) { throw 'Signed Explorer menu package was not registered' }
+    } else {
+        Write-Output 'Explorer menu package is unsigned; registration is expected only in signed releases.'
+    }
+}
 $null = Start-Process (Join-Path $install 'uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 for ($i=0; $i -lt 20; $i++) {
     if (!(Test-Path -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Classes\*\shell\MaxRAR.Compress')) { break }
@@ -21,5 +30,6 @@ for ($i=0; $i -lt 20; $i++) {
 }
 if (Test-Path -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Classes\*\shell\MaxRAR.Compress') { throw 'Shell registration remained after uninstall' }
 if (Test-Path $shortcut) { throw 'Send To shortcut remained after uninstall' }
+if (Get-AppxPackage -Name Matily.MaxRAR.ExplorerMenu) { throw 'Explorer menu package remained after uninstall' }
 if (Test-Path -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Classes\SystemFileAssociations\.rar\shell\MaxRAR.Extract') { throw 'RAR shell registration remained after uninstall' }
 Write-Output 'Explorer registration, quoting, Send To and uninstall checks passed.'

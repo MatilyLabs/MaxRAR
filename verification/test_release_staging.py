@@ -63,6 +63,8 @@ class StagingTests(unittest.TestCase):
             feed = assemble.assemble(root/'staged',root/'out',notes)
             self.assertEqual(set(feed['platforms']),set(module.SUFFIXES))
             self.assertTrue((root/'out/SHA256SUMS.txt').is_file())
+            self.assertTrue((root/f'out/MaxRAR_{version}_macOS_apple-silicon.dmg').is_file())
+            self.assertTrue((root/f'out/MaxRAR_{version}_macOS_intel.dmg').is_file())
             self.assertEqual(feed['notes'],'Fixture notes')
             sidecar = next((root/'staged/windows-x86_64').glob('*.sig'))
             sidecar.write_text(signature('0.0.0'))
