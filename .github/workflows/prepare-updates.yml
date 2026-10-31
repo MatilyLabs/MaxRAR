@@ -50,6 +50,7 @@ jobs:
             target: windows-x86_64
             rust_target: x86_64-pc-windows-msvc
             bundles: nsis
+            extra_config: --config src-tauri/tauri.explorer-menu.json --config src-tauri/release-signing.json
           - os: macos-15-intel
             label: macOS - Intel (x64)
             artifact: macos-intel
@@ -101,8 +102,60 @@ jobs:
       - run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: Free checked debug artifacts before packaging
         run: cargo clean --profile dev
+      - name: Install the Windows signing tool
+        if: runner.os == 'Windows'
+        run: cargo install trusted-signing-cli --locked
+      - name: Build and sign the Windows 11 Explorer menu package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: ./scripts/build-explorer-menu.ps1 -Target ${{ matrix.rust_target }} -Sign
+      - name: Apple signing and notarization
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "::error::Apple signing secrets are missing; refusing to publish an unsigned Mac release."
+            exit 1
+          fi
+          cert=$(printf '%s' "$APPLE_CERTIFICATE" | tr -d ' \r\n')
+          echo "::add-mask::$cert"
+          echo "APPLE_CERTIFICATE=$cert" >> "$GITHUB_ENV"
+          for v in APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            printf '%s=%s\n' "$v" "$(printf '%s' "${!v}" | tr -d '\r\n')" >> "$GITHUB_ENV"
+          done
       - name: Build signed updater artifacts and initial installers
-        run: npm run tauri -- build --config src-tauri/tauri.updater.conf.json --bundles ${{ matrix.bundles }} --target ${{ matrix.rust_target }}
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: npm run tauri -- build --config src-tauri/tauri.updater.conf.json ${{ matrix.extra_config }} --bundles ${{ matrix.bundles }} --target ${{ matrix.rust_target }}
+      - name: Check Windows publisher signatures
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundle = 'target/${{ matrix.rust_target }}/release'
+          foreach ($f in @("$bundle/maxrar.exe") + (Get-ChildItem "$bundle/bundle/nsis/*.exe").FullName + 'target/explorer-menu/maxrar_shell.dll' + 'target/explorer-menu/maxrar-explorer-menu.msix') {
+            $sig = Get-AuthenticodeSignature -LiteralPath $f
+            if ($sig.Status -ne 'Valid') { throw "$f signature: $($sig.Status)" }
+            Write-Output "$([IO.Path]::GetFileName($f)): $($sig.SignerCertificate.Subject)"
+          }
+      - name: Check Mac signature and notarization
+        if: runner.os == 'macOS'
+        run: |
+          app=$(find target/${{ matrix.rust_target }}/release/bundle/macos -maxdepth 1 -name '*.app' | head -1)
+          codesign --verify --deep --strict --verbose=2 "$app"
+          spctl --assess --type execute --verbose=2 "$app"
+          xcrun stapler validate "$app"
       - name: Check Windows Explorer integration
         if: runner.os == 'Windows'
         shell: pwsh

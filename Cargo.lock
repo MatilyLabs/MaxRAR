@@ -2949,6 +2949,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "maxrar-shell"
+version = "0.1.1"
+dependencies = [
+ "windows",
+ "windows-core",
+]
+
+[[package]]
 name = "maybe-owned"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

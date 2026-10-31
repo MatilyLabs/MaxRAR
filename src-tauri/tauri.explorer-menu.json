@@ -1,0 +1,9 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "resources": {
+      "../target/explorer-menu/maxrar_shell.dll": "maxrar_shell.dll",
+      "../target/explorer-menu/maxrar-explorer-menu.msix": "maxrar-explorer-menu.msix"
+    }
+  }
+}
