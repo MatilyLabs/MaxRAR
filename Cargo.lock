@@ -6731,6 +6731,7 @@ dependencies = [
  "fs2",
  "libc",
  "lzma-rust2",
+ "ppmd-rust",
  "serde",
  "serde_json",
  "sevenz-rust2",

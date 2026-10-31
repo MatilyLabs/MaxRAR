@@ -46,15 +46,6 @@ fn base() -> Value {
 fn write(path: &Path, index: &Value, data: &[u8]) {
     fs::write(path, pack(index, data)).unwrap();
 }
-fn index(raw: &[u8]) -> Value {
-    let n = u32::from_le_bytes(raw[12..16].try_into().unwrap()) as usize;
-    if u16::from_le_bytes(raw[8..10].try_into().unwrap()) == 1 {
-        let decoded = u32::from_le_bytes(raw[16..20].try_into().unwrap()) as usize;
-        serde_json::from_slice(&zstd::bulk::decompress(&raw[20..16 + n], decoded).unwrap()).unwrap()
-    } else {
-        serde_json::from_slice(&raw[16..16 + n]).unwrap()
-    }
-}
 fn random(size: usize) -> Vec<u8> {
     let mut value = 0x759b32e5u32;
     (0..size)
@@ -89,21 +80,12 @@ fn real_container_multiblock_roundtrip_and_adaptive_store_are_verified() {
         .iter()
         .any(|f| f.code == "experimental_format"));
     let raw = fs::read(&path).unwrap();
-    let index = index(&raw);
-    let codecs: Vec<_> = index["entries"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .flat_map(|e| {
-            e["blocks"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|b| b["codec"].as_str().unwrap())
-        })
-        .collect();
-    assert!(codecs.contains(&"store"));
-    assert!(codecs.contains(&"zstd"));
+    // New archives are MRAR/2: solid units with a codec chosen per unit.
+    assert_eq!(&raw[8..12], &[2, 0, 2, 0]);
+    assert!(
+        raw.len() < noise.len() + 64 * 1024,
+        "compressible content should shrink while noise is kept"
+    );
     test(&path, &flag(), &|_| {}).unwrap();
     let id = info
         .entries
@@ -351,7 +333,7 @@ fn cancellation_limits_no_clobber_and_encryption_boundaries_are_honest() {
 }
 
 #[test]
-fn grouped_v1_crosses_boundaries_and_selected_extraction_preserves_file_hashes() {
+fn solid_units_cross_file_boundaries_and_selected_extraction_is_exact() {
     let t = tempfile::tempdir().unwrap();
     let source = t.path().join("related");
     fs::create_dir(&source).unwrap();
@@ -364,9 +346,7 @@ fn grouped_v1_crosses_boundaries_and_selected_extraction_preserves_file_hashes()
     let path = t.path().join("grouped.mrar");
     let info = create(&path, std::slice::from_ref(&source), &flag(), &|_| {}).unwrap();
     let raw = fs::read(&path).unwrap();
-    assert_eq!(&raw[8..12], &[1, 0, 1, 0]);
-    let manifest = index(&raw);
-    assert_eq!(manifest["groups"].as_array().unwrap().len(), 2);
+    assert_eq!(&raw[8..12], &[2, 0, 2, 0]);
     assert!(
         raw.len() < shared.len() * 4,
         "shared random content should compress across files"
@@ -551,4 +531,178 @@ fn grouped_creation_cancellation_cleans_pending_data_and_empty_archives_work() {
             .bytes,
         b""
     );
+}
+
+fn varint(out: &mut Vec<u8>, mut v: u64) {
+    while v >= 0x80 {
+        out.push(v as u8 | 0x80);
+        v >>= 7;
+    }
+    out.push(v as u8);
+}
+/// One stored unit holding `data`, then the given entries as (dir, path, size).
+fn v2_index(data: &[u8], entries: &[(bool, &str, u64)]) -> Vec<u8> {
+    let mut out = Vec::new();
+    varint(&mut out, 1);
+    out.push(0);
+    varint(&mut out, data.len() as u64);
+    varint(&mut out, data.len() as u64);
+    out.extend(Sha256::digest(data));
+    varint(&mut out, entries.len() as u64);
+    for (dir, path, size) in entries {
+        out.push(u8::from(*dir));
+        varint(&mut out, 0);
+        varint(&mut out, path.len() as u64);
+        out.extend(path.as_bytes());
+        if !dir {
+            varint(&mut out, *size);
+        }
+    }
+    out
+}
+fn pack_v2(index: &[u8], data: &[u8]) -> Vec<u8> {
+    let mut encoded = (index.len() as u32).to_le_bytes().to_vec();
+    encoded.extend(zstd::bulk::compress(index, 3).unwrap());
+    let mut raw = b"MRAR\r\n\x1a\n".to_vec();
+    raw.extend(2u16.to_le_bytes());
+    raw.extend(2u16.to_le_bytes());
+    raw.extend((encoded.len() as u32).to_le_bytes());
+    raw.extend(encoded);
+    raw.extend(data);
+    raw.extend(Sha256::digest(&raw));
+    raw
+}
+
+#[test]
+fn v2_index_is_strict_and_unit_hashes_guard_every_byte() {
+    let t = tempfile::tempdir().unwrap();
+    let path = t.path().join("v2.mrar");
+    let data = b"abcdef";
+    let good = v2_index(
+        data,
+        &[(true, "d", 0), (false, "d/a.txt", 2), (false, "d/b.txt", 4)],
+    );
+    fs::write(&path, pack_v2(&good, data)).unwrap();
+    let info = inspect(&path).unwrap();
+    assert_eq!(info.entries.len(), 3);
+    assert_eq!(
+        inspect_entry_bytes(&path, "2", 10, None, &flag())
+            .unwrap()
+            .bytes,
+        b"cdef"
+    );
+    test(&path, &flag(), &|_| {}).unwrap();
+    let dest = t.path().join("out");
+    let p = plan(&path, &dest, &[], ConflictPolicy::Skip, Limits::default()).unwrap();
+    extract(&p, &flag(), &|_| {}).unwrap();
+    assert_eq!(fs::read(dest.join("d/b.txt")).unwrap(), b"cdef");
+
+    let rejected = |index: Vec<u8>, data: &[u8], why: &str| {
+        fs::write(&path, pack_v2(&index, data)).unwrap();
+        assert!(inspect(&path).is_err(), "accepted: {why}");
+    };
+    // Unknown codec, oversized PPMd model and LZMA2 dictionary.
+    let mut unknown = good.clone();
+    unknown[1] = 9;
+    rejected(unknown, data, "unknown codec");
+    let mut ppmd = vec![1, 2, 6, 30];
+    varint(&mut ppmd, 6);
+    varint(&mut ppmd, 6);
+    ppmd.extend(Sha256::digest(data));
+    ppmd.extend(&good[1 + 1 + 1 + 1 + 32..]);
+    rejected(ppmd, data, "PPMd model above 64 MiB");
+    let mut lzma = vec![1, 1, 30];
+    varint(&mut lzma, 6);
+    varint(&mut lzma, 6);
+    lzma.extend(Sha256::digest(data));
+    lzma.extend(&good[1 + 1 + 1 + 1 + 32..]);
+    rejected(lzma, data, "LZMA2 dictionary above 16 MiB");
+    // Sizes that do not add up, store with mismatched sizes, trailing bytes.
+    rejected(
+        v2_index(data, &[(false, "a", 5)]),
+        data,
+        "files shorter than units",
+    );
+    rejected(
+        v2_index(data, &[(false, "a", 7)]),
+        data,
+        "files longer than units",
+    );
+    rejected(
+        v2_index(data, &[(false, "a", 6)]),
+        b"abcdefg",
+        "data longer than units",
+    );
+    let mut trailing = v2_index(data, &[(false, "a", 6)]);
+    trailing.push(0);
+    rejected(trailing, data, "trailing index bytes");
+    let mut overlong = v2_index(data, &[(false, "a", 6)]);
+    overlong[0] = 0x81;
+    overlong.insert(1, 0x00);
+    rejected(overlong, data, "non-minimal number");
+    // Unsafe, non-canonical and duplicate paths.
+    for bad in ["../a", "/a", "a//b", "a\\b", "C:/a", "a/./b"] {
+        rejected(v2_index(data, &[(false, bad, 6)]), data, bad);
+    }
+    rejected(
+        v2_index(data, &[(false, "a", 3), (false, "A", 3)]),
+        data,
+        "case duplicate",
+    );
+
+    // A changed payload byte with a recomputed footer still fails on the unit hash.
+    let mut tampered = pack_v2(&good, data);
+    let at = tampered.len() - 32 - 1;
+    tampered[at] ^= 1;
+    tampered.truncate(tampered.len() - 32);
+    let footer = Sha256::digest(&tampered);
+    tampered.extend(footer);
+    fs::write(&path, tampered).unwrap();
+    assert!(inspect(&path).is_ok());
+    assert!(test(&path, &flag(), &|_| {}).is_err());
+    assert!(inspect_entry_bytes(&path, "2", 10, None, &flag()).is_err());
+}
+
+#[test]
+fn v2_real_archive_tampering_and_unit_boundaries() {
+    let t = tempfile::tempdir().unwrap();
+    let src = t.path().join("src");
+    fs::create_dir(&src).unwrap();
+    // 40 MiB of text crosses two unit boundaries; a file sits across each one.
+    let line = b"2026-10-31,record,user42,upload,eu-central,1234,ok\n";
+    let text: Vec<u8> = line.iter().copied().cycle().take(15 << 20).collect();
+    for name in ["a.csv", "b.csv"] {
+        fs::write(src.join(name), &text).unwrap();
+    }
+    fs::write(src.join("c.bin"), random(10 << 20)).unwrap();
+    let path = t.path().join("big.mrar");
+    let info = create(&path, std::slice::from_ref(&src), &flag(), &|_| {}).unwrap();
+    assert!(fs::metadata(&path).unwrap().len() < (11 << 20));
+    let b = info
+        .entries
+        .iter()
+        .find(|e| e.name.ends_with("b.csv"))
+        .unwrap();
+    let bytes = inspect_entry_bytes(&path, &b.id, 4 << 20, None, &flag()).unwrap();
+    assert_eq!(bytes.bytes, text[..4 << 20]);
+    let dest = t.path().join("out");
+    let p = plan(
+        &path,
+        &dest,
+        std::slice::from_ref(&b.id),
+        ConflictPolicy::Skip,
+        Limits::default(),
+    )
+    .unwrap();
+    extract(&p, &flag(), &|_| {}).unwrap();
+    assert_eq!(fs::read(dest.join("src/b.csv")).unwrap(), text);
+    let mut raw = fs::read(&path).unwrap();
+    let middle = raw.len() / 2;
+    raw[middle] ^= 0x40;
+    raw.truncate(raw.len() - 32);
+    let footer = Sha256::digest(&raw);
+    raw.extend(footer);
+    let bad = t.path().join("bad.mrar");
+    fs::write(&bad, raw).unwrap();
+    assert!(test(&bad, &flag(), &|_| {}).is_err());
 }
