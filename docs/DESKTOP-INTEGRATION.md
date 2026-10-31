@@ -21,9 +21,24 @@ Use the NSIS installer. It registers these **per-user** Explorer commands:
 - Extract with MaxRAR… for supported archive extensions.
 - Send to → Compress with MaxRAR for multiple files/folders in one archive.
 
-On Windows 11 the classic commands can appear under **Show more options**. The direct context commands intentionally accept one selected item; Send To is the multi-selection route. Portable users can enable single-item context commands with Help → Desktop integration. The NSIS installer additionally creates the Send To shortcut. Uninstall removes the app's own matching verb registrations and shortcut; default archive associations are handled by Tauri's existing installer configuration.
+### Windows 11 main menu
 
-No COM extension is claimed for the Windows 11 compact menu. No machine-wide registration, administrator privileges or default-handler takeover is added. File associations and context verbs are separate.
+On Windows 11 the installer also registers a small signed package, `Matily.MaxRAR.ExplorerMenu`, so **MaxRAR** appears in the main right-click menu (no **Show more options** needed). It is a submenu:
+
+- **Open in MaxRAR** and **Extract with MaxRAR…** for one supported archive.
+- **Compress with MaxRAR…** for any files or folders (up to 256 items, multi-select works here).
+
+How it works: `crates/maxrar-shell` builds `maxrar_shell.dll`, an `IExplorerCommand` handler that only launches `maxrar.exe` with the same `--compress` / `--extract` arguments as the classic verbs. Windows only shows these handlers for packaged apps, so `src-tauri/shell/windows/package/AppxManifest.xml` describes a *sparse* package whose files stay in the normal install folder. `scripts/build-explorer-menu.ps1` builds the DLL and the `.msix`; in releases it signs both with Azure Artifact Signing and copies the publisher from the signing certificate into the manifest (the two must match). The NSIS hooks run `Add-AppxPackage -ExternalLocation` after install on build 22000+ and `Remove-AppxPackage` before uninstall. If registration fails (for example an unsigned development build), the classic commands under **Show more options** still work.
+
+The classic commands stay registered on purpose, as the fallback and for Windows 10. On Windows 11 they appear again under **Show more options**.
+
+To test an unsigned build locally, turn on Developer Mode and register the unpacked layout instead of the `.msix`: `Add-AppxPackage -Register target\explorer-menu\layout\AppxManifest.xml -ExternalLocation <folder with maxrar.exe and maxrar_shell.dll>`. Windows refuses unsigned packaged apps from the `.msix` itself. Remove it with `Get-AppxPackage Matily.MaxRAR.ExplorerMenu | Remove-AppxPackage`.
+
+### Windows notes
+
+The direct classic context commands intentionally accept one selected item; Send To and the Windows 11 menu are the multi-selection routes. Portable users can enable single-item context commands with Help → Desktop integration. The NSIS installer additionally creates the Send To shortcut. Uninstall removes the app's own matching verb registrations, the menu package and the shortcut; default archive associations are handled by Tauri's existing installer configuration.
+
+No machine-wide registration, administrator privileges or default-handler takeover is added. File associations and context verbs are separate.
 
 ## Handoff and testing
 

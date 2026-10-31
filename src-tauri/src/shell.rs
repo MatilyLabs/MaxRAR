@@ -276,7 +276,7 @@ pub fn shell_integration_status() -> Status {
     }
     #[cfg(target_os = "windows")]
     {
-        Status{platform:"Windows",available:true,installed:reg(&["query","HKCU\\Software\\Classes\\*\\shell\\MaxRAR.Compress"]).is_ok(),message:"Explorer → right-click → Compress with MaxRAR. On Windows 11, look under Show more options. Select one item per context command.".into()}
+        Status{platform:"Windows",available:true,installed:reg(&["query","HKCU\\Software\\Classes\\*\\shell\\MaxRAR.Compress"]).is_ok(),message:"Explorer → right-click → MaxRAR. Installed releases add MaxRAR to the Windows 11 main menu; the classic commands are under Show more options.".into()}
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {

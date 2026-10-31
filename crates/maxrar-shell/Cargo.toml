@@ -1,0 +1,25 @@
+[package]
+license.workspace = true
+name = "maxrar-shell"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Windows 11 File Explorer context menu for MaxRAR"
+
+[lib]
+name = "maxrar_shell"
+crate-type = ["cdylib", "rlib"]
+
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.62"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Ole",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_Common",
+] }
+
+[target.'cfg(windows)'.dev-dependencies]
+windows = { version = "0.62", features = ["Win32_System_Com", "Win32_UI_Shell", "Win32_UI_Shell_Common"] }
