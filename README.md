@@ -23,35 +23,35 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
 
 ## Download
 
-**MaxRAR v0.1.1 is available for testing.** Choose the download for your computer.
+**MaxRAR v0.1.2 is available for testing.** Choose the download for your computer.
 
 <p align="center">
-  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/windows-x86_64-MaxRAR_0.1.1_x64-setup.exe"><img src="docs/assets/buttons/get-windows.svg" alt="Download MaxRAR for Windows x64 (EXE installer)" width="200" height="53" /></a>
-  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_apple-silicon.dmg"><img src="docs/assets/buttons/get-mac-apple-silicon.svg" alt="Download MaxRAR for Mac with Apple Silicon (DMG)" width="200" height="53" /></a>
-  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_intel.dmg"><img src="docs/assets/buttons/get-mac-intel.svg" alt="Download MaxRAR for Mac with Intel (DMG)" width="200" height="53" /></a>
-  <a href="https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1"><img src="docs/assets/buttons/get-linux.svg" alt="Download MaxRAR for Linux x64 (DEB, RPM or AppImage)" width="200" height="53" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_x64-setup.exe"><img src="docs/assets/buttons/get-windows.svg" alt="Download MaxRAR for Windows x64 (EXE installer)" width="200" height="53" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_macOS_apple-silicon.dmg"><img src="docs/assets/buttons/get-mac-apple-silicon.svg" alt="Download MaxRAR for Mac with Apple Silicon (DMG)" width="200" height="53" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_macOS_intel.dmg"><img src="docs/assets/buttons/get-mac-intel.svg" alt="Download MaxRAR for Mac with Intel (DMG)" width="200" height="53" /></a>
+  <a href="https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.2"><img src="docs/assets/buttons/get-linux.svg" alt="Download MaxRAR for Linux x64 (DEB, RPM or AppImage)" width="200" height="53" /></a>
 </p>
 
-<p align="center"><sub>v0.1.1 · Not sure which Mac? Apple menu → About This Mac · <a href="#first-launch">First launch</a></sub></p>
+<p align="center"><sub>v0.1.2 · Not sure which Mac? Apple menu → About This Mac · <a href="#first-launch">First launch</a></sub></p>
 
-[Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt)
+[Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.2) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/SHA256SUMS.txt)
 
 | Your computer | Package | Download |
 | --- | --- | --- |
-| **Windows** — x64 | EXE installer | [Download for Windows](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/windows-x86_64-MaxRAR_0.1.1_x64-setup.exe) |
-| **Mac with Apple Silicon** (M1, M2, M3, M4…) | DMG | [Download for Apple Silicon](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_apple-silicon.dmg) |
-| **Mac with Intel** | DMG | [Download for Intel Mac](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_macOS_intel.dmg) |
-| **Linux** — x64 | DEB / RPM / AppImage | [DEB](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR_0.1.1_amd64.deb) · [RPM](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR-0.1.1-1.x86_64.rpm) · [AppImage](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/linux-x86_64-MaxRAR_0.1.1_amd64.AppImage) |
+| **Windows** — x64 | EXE installer | [Download for Windows](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_x64-setup.exe) |
+| **Mac with Apple Silicon** (M1, M2, M3, M4…) | DMG | [Download for Apple Silicon](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_macOS_apple-silicon.dmg) |
+| **Mac with Intel** | DMG | [Download for Intel Mac](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_macOS_intel.dmg) |
+| **Linux** — x64 | DEB / RPM / AppImage | [DEB](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_amd64.deb) · [RPM](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR-0.1.2-1.x86_64.rpm) · [AppImage](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/MaxRAR_0.1.2_amd64.AppImage) |
 
 Not sure which Mac you have? Open **Apple menu → About This Mac**. If it lists a chip such as “Apple M2”, choose Apple Silicon. If it lists an Intel processor, choose Intel.
 
 ### First launch
 
-From v0.1.2, the Windows installer and app are signed by the publisher (Ripon Chandra Malo, through Azure Artifact Signing), and the Mac apps are signed with an Apple Developer ID and notarized by Apple. You can compare a download with the [checksums file](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt) (Windows: `certutil -hashfile <file> SHA256`; Mac/Linux: `shasum -a 256 <file>`).
+From v0.1.2, the Windows installer and app are signed by the publisher (Ripon Chandra Malo, through Azure Artifact Signing), and the Mac apps are signed with an Apple Developer ID and notarized by Apple. You can compare a download with the [checksums file](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.2/SHA256SUMS.txt) (Windows: `certutil -hashfile <file> SHA256`; Mac/Linux: `shasum -a 256 <file>`).
 
 **Windows**
 
-1. Run `windows-x86_64-MaxRAR_0.1.1_x64-setup.exe`.
+1. Run `MaxRAR_0.1.2_x64-setup.exe`.
 2. Windows SmartScreen may still show **“Windows protected your PC”** while the new signature builds reputation. Check that the publisher is Ripon Chandra Malo, choose **More info**, then **Run anyway**.
 3. Follow the installer, then open **MaxRAR** from the Start menu.
 4. On Windows 11, right-click files or folders and choose **MaxRAR**. On Windows 10 the commands are in the classic right-click menu, and **Send to → Compress with MaxRAR** works for several items.
@@ -64,7 +64,7 @@ From v0.1.2, the Windows installer and app are signed by the publisher (Ripon Ch
 
 **Linux**
 
-Install the DEB or RPM with your package manager so system libraries are resolved. For the AppImage, make it executable (`chmod +x MaxRAR_0.1.1_amd64.AppImage`) and run it. Only the AppImage supports in-app updates; DEB/RPM installs link you to the latest packages.
+Install the DEB or RPM with your package manager so system libraries are resolved. For the AppImage, make it executable (`chmod +x MaxRAR_0.1.2_amd64.AppImage`) and run it. Only the AppImage supports in-app updates; DEB/RPM installs link you to the latest packages.
 
 ### Using MaxRAR for the first time
 
