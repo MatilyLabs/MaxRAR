@@ -32,7 +32,7 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
   <a href="https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1"><img src="docs/assets/buttons/get-linux.svg" alt="Download MaxRAR for Linux x64 (DEB, RPM or AppImage)" width="200" height="53" /></a>
 </p>
 
-<p align="center"><sub>v0.1.1 · Not sure which Mac? Apple menu → About This Mac · <a href="#first-launch-security-warnings-are-expected">First-launch security warnings</a></sub></p>
+<p align="center"><sub>v0.1.1 · Not sure which Mac? Apple menu → About This Mac · <a href="#first-launch">First launch</a></sub></p>
 
 [Release notes](https://github.com/MatilyLabs/MaxRAR/releases/tag/v0.1.1) · [All downloads](https://github.com/MatilyLabs/MaxRAR/releases) · [SHA-256 checksums](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt)
 
@@ -45,30 +45,22 @@ MaxRAR is a desktop archive manager by [Matily](https://www.matily.org), built w
 
 Not sure which Mac you have? Open **Apple menu → About This Mac**. If it lists a chip such as “Apple M2”, choose Apple Silicon. If it lists an Intel processor, choose Intel.
 
-### First launch: security warnings are expected
+### First launch
 
-MaxRAR is not yet signed with a Windows publisher certificate (Authenticode) and the Mac apps are not Apple-notarized. Windows and macOS will therefore warn you the first time. This is expected for unsigned software; it is not a sign that the file is damaged. Before installing, you can compare the file’s SHA-256 with the [checksums file](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt) (Windows: `certutil -hashfile <file> SHA256`; Mac/Linux: `shasum -a 256 <file>`). Only continue if the values match and you downloaded from this repository’s releases page.
+From v0.1.2, the Windows installer and app are signed by the publisher (Ripon Chandra Malo, through Azure Artifact Signing), and the Mac apps are signed with an Apple Developer ID and notarized by Apple. You can compare a download with the [checksums file](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/SHA256SUMS.txt) (Windows: `certutil -hashfile <file> SHA256`; Mac/Linux: `shasum -a 256 <file>`).
 
 **Windows**
 
 1. Run `windows-x86_64-MaxRAR_0.1.1_x64-setup.exe`.
-2. If you see **“Windows protected your PC”** (Microsoft Defender SmartScreen), choose **More info**, then **Run anyway**.
+2. Windows SmartScreen may still show **“Windows protected your PC”** while the new signature builds reputation. Check that the publisher is Ripon Chandra Malo, choose **More info**, then **Run anyway**.
 3. Follow the installer, then open **MaxRAR** from the Start menu.
-4. On Windows 11, the right-click actions appear under **Show more options**. Use **Send to → Compress with MaxRAR** for several files or folders.
+4. On Windows 11, right-click files or folders and choose **MaxRAR**. On Windows 10 the commands are in the classic right-click menu, and **Send to → Compress with MaxRAR** works for several items.
 
 **macOS**
 
 1. Open the DMG for your Mac and drag **MaxRAR** into **Applications**.
-2. Open MaxRAR from Applications. macOS will likely say it can’t verify the app or that it “cannot be opened”. Click **Done** (or **Cancel**), don’t move it to the Bin.
-3. Open **System Settings → Privacy & Security**, scroll to the Security section, and click **Open Anyway** next to the MaxRAR message. Confirm with your password or Touch ID, then click **Open**. You only need to do this once.
-   - On macOS 14 and earlier you can instead right-click (Control-click) MaxRAR in Applications, choose **Open**, then **Open** again.
-4. If macOS says the app is **“damaged”**, remove the download quarantine flag in Terminal, then open it again:
-
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/MaxRAR.app
-   ```
-
-5. To add Finder compress/extract actions, choose **Help → Desktop integration → Enable desktop actions**.
+2. Open MaxRAR from Applications. macOS asks once whether to open an app downloaded from the internet; click **Open**.
+3. To add Finder compress/extract actions, choose **Help → Desktop integration → Enable desktop actions**.
 
 **Linux**
 
@@ -84,7 +76,7 @@ Install the DEB or RPM with your package manager so system libraries are resolve
 
 See the [user manual](docs/USER-MANUAL.md) and [desktop integration guide](docs/DESKTOP-INTEGRATION.md) for more.
 
-MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE). The release includes [license texts and notices](https://github.com/MatilyLabs/MaxRAR/releases/download/v0.1.1/MaxRAR-0.1.1-Licenses.zip).
+MaxRAR’s original code is licensed under [Apache License 2.0](LICENSE). License texts and notices are in [NOTICE](NOTICE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Why MaxRAR?
 

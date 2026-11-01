@@ -1,0 +1,224 @@
+name: Release
+
+# Push a version tag (git tag -a v0.1.2 -m "MaxRAR v0.1.2" && git push origin v0.1.2).
+# The tag must match the app version and have notes in docs/releases/<tag>.md.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Check tag and prepare release
+    runs-on: ubuntu-24.04
+    outputs:
+      id: ${{ steps.release.outputs.id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Check the tag matches the app version
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match app version $version"
+            exit 1
+          fi
+          test -f "docs/releases/$GITHUB_REF_NAME.md" || { echo "::error::Missing docs/releases/$GITHUB_REF_NAME.md"; exit 1; }
+          python3 scripts/check-release-config.py
+
+      # Reuses a draft if one exists, so assets never land in two places.
+      - name: Create the draft release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          find_id() {
+            gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -1
+          }
+          id=$(find_id)
+          if [ -z "$id" ]; then
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "MaxRAR $GITHUB_REF_NAME" --notes-file "docs/releases/$GITHUB_REF_NAME.md"
+            id=$(find_id)
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build - ${{ matrix.label }}
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Signed with Azure Artifact Signing (account matily-signing, profile matily-public).
+          - platform: windows-latest
+            label: Windows (x64)
+            args: --bundles nsis --config src-tauri/tauri.updater.conf.json --config src-tauri/tauri.explorer-menu.json --config src-tauri/release-signing.json
+          - platform: macos-15
+            label: macOS - Apple Silicon
+            target: aarch64-apple-darwin
+            args: --bundles app,dmg --target aarch64-apple-darwin --config src-tauri/tauri.updater.conf.json
+          - platform: macos-15-intel
+            label: macOS - Intel
+            target: x86_64-apple-darwin
+            args: --bundles app,dmg --target x86_64-apple-darwin --config src-tauri/tauri.updater.conf.json
+          - platform: ubuntu-24.04
+            label: Linux (x64)
+            args: --bundles appimage,deb,rpm --config src-tauri/tauri.updater.conf.json
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: '1.95.0'
+          targets: ${{ matrix.target }}
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libfuse2
+
+      - run: npm ci
+
+      - name: Install the Windows signing tool
+        if: runner.os == 'Windows'
+        run: cargo install trusted-signing-cli --locked
+
+      - name: Build and sign the Windows 11 Explorer menu package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: ./scripts/build-explorer-menu.ps1 -Target x86_64-pc-windows-msvc -Sign
+
+      # Signs and notarizes the Mac build with the Developer ID certificate.
+      - name: Apple signing and notarization
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "::error::Apple signing secrets are missing; refusing to release an unsigned Mac build."
+            exit 1
+          fi
+          # A pasted certificate may carry line breaks; base64 must not.
+          cert=$(printf '%s' "$APPLE_CERTIFICATE" | tr -d ' \r\n')
+          # No longer the stored secret, so GitHub would not hide it in logs.
+          echo "::add-mask::$cert"
+          echo "APPLE_CERTIFICATE=$cert" >> "$GITHUB_ENV"
+          for v in APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            printf '%s=%s\n' "$v" "$(printf '%s' "${!v}" | tr -d '\r\n')" >> "$GITHUB_ENV"
+          done
+
+      # latest.json is written once, after all builds, so parallel jobs cannot overwrite it.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        with:
+          releaseId: ${{ needs.release.outputs.id }}
+          includeUpdaterJson: false
+          args: ${{ matrix.args }}
+
+  publish:
+    name: Publish release and update README
+    needs: [release, build]
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+
+      - name: Name the Mac installers for each chip
+        run: |
+          version="${TAG#v}"
+          assets="repos/$GITHUB_REPOSITORY/releases/${{ needs.release.outputs.id }}/assets"
+          gh api "$assets" --paginate --jq '.[] | "\(.id) \(.name)"' > names.txt
+          while read -r id name; do
+            case "$name" in
+              *_aarch64.dmg) new="MaxRAR_${version}_macOS_apple-silicon.dmg" ;;
+              *_x64.dmg) new="MaxRAR_${version}_macOS_intel.dmg" ;;
+              *) continue ;;
+            esac
+            # A repeated run leaves the earlier attempt's renamed file behind; the new build replaces it.
+            stale=$(awk -v n="$new" '$2 == n { print $1 }' names.txt)
+            [ -z "$stale" ] || gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$stale"
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/assets/$id" -f name="$new" > /dev/null
+            echo "$name -> $new"
+          done < names.txt
+
+      - name: Write the update feed and checksums
+        run: |
+          mkdir assets
+          gh release download "$TAG" -D assets
+          python3 - <<'EOF'
+          import datetime, glob, json, os
+          tag, repo = os.environ['TAG'], os.environ['GITHUB_REPOSITORY']
+          # The file each platform's in-app updater installs.
+          updates = {'windows-x86_64': '*_x64-setup.exe', 'darwin-aarch64': '*aarch64*.app.tar.gz',
+                     'darwin-x86_64': '*x64*.app.tar.gz', 'linux-x86_64': '*.AppImage'}
+          platforms = {}
+          for platform, pattern in updates.items():
+              found = glob.glob(os.path.join('assets', pattern))
+              if len(found) != 1:
+                  raise SystemExit(f'{platform}: expected one {pattern}, found {found}')
+              name = os.path.basename(found[0])
+              platforms[platform] = {'signature': open(found[0] + '.sig').read().strip(),
+                                     'url': f'https://github.com/{repo}/releases/download/{tag}/{name}'}
+          feed = {'version': tag.removeprefix('v'), 'notes': open(f'docs/releases/{tag}.md').read(),
+                  'pub_date': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                  'platforms': platforms}
+          json.dump(feed, open('latest.json', 'w'), indent=2)
+          EOF
+          (cd assets && sha256sum -- * ../latest.json | sed 's#\.\./##') > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$TAG" latest.json SHA256SUMS.txt --clobber
+
+      - name: Publish the release
+        run: gh release edit "$TAG" --draft=false --latest --title "MaxRAR $TAG" --notes-file "docs/releases/$TAG.md"
+
+      - name: Point README download links at the new release
+        run: |
+          version="${TAG#v}"
+          v='[0-9]+\.[0-9]+\.[0-9]+'
+          sed -i -E \
+            -e "s#releases/(download|tag)/v$v#releases/\1/$TAG#g" \
+            -e "s#(windows-x86_64-)?MaxRAR_${v}_x64-setup\.exe#MaxRAR_${version}_x64-setup.exe#g" \
+            -e "s#MaxRAR_${v}_macOS_(apple-silicon|intel)\.dmg#MaxRAR_${version}_macOS_\1.dmg#g" \
+            -e "s#MaxRAR_${v}_amd64\.deb#MaxRAR_${version}_amd64.deb#g" \
+            -e "s#MaxRAR-${v}-1\.x86_64\.rpm#MaxRAR-${version}-1.x86_64.rpm#g" \
+            -e "s#(linux-x86_64-)?MaxRAR_${v}_amd64\.AppImage#MaxRAR_${version}_amd64.AppImage#g" \
+            -e "s#MaxRAR v$v is available#MaxRAR $TAG is available#g" \
+            -e "s#<sub>v$v ·#<sub>$TAG ·#g" \
+            README.md
+          if git diff --quiet README.md; then
+            echo "README already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update README download links to $TAG"
+          git push origin HEAD:main
