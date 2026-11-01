@@ -155,16 +155,20 @@ jobs:
       - name: Name the Mac installers for each chip
         run: |
           version="${TAG#v}"
-          gh api "repos/$GITHUB_REPOSITORY/releases/${{ needs.release.outputs.id }}/assets" --paginate --jq '.[] | "\(.id) \(.name)"' |
+          assets="repos/$GITHUB_REPOSITORY/releases/${{ needs.release.outputs.id }}/assets"
+          gh api "$assets" --paginate --jq '.[] | "\(.id) \(.name)"' > names.txt
           while read -r id name; do
             case "$name" in
               *_aarch64.dmg) new="MaxRAR_${version}_macOS_apple-silicon.dmg" ;;
               *_x64.dmg) new="MaxRAR_${version}_macOS_intel.dmg" ;;
               *) continue ;;
             esac
+            # A repeated run leaves the earlier attempt's renamed file behind; the new build replaces it.
+            stale=$(awk -v n="$new" '$2 == n { print $1 }' names.txt)
+            [ -z "$stale" ] || gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$stale"
             gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/assets/$id" -f name="$new" > /dev/null
             echo "$name -> $new"
-          done
+          done < names.txt
 
       - name: Write the update feed and checksums
         run: |
