@@ -1,6 +1,8 @@
 name: Desktop and CLI
 on:
+  # Branches are checked by their pull request; main is checked after each merge.
   push:
+    branches: [main]
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
