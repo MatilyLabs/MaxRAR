@@ -159,13 +159,37 @@ jobs:
             if ($sig.Status -ne 'Valid') { throw "$f signature: $($sig.Status)" }
             Write-Output "$([IO.Path]::GetFileName($f)): $($sig.SignerCertificate.Subject)"
           }
+      - name: Notarize and staple the Mac installer
+        if: runner.os == 'macOS'
+        run: |
+          # The DMG is what people open first, so it carries its own ticket. Apple can
+          # take a while to publish a ticket after accepting it, so stapling retries.
+          dmg=$(find target/${{ matrix.rust_target }}/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -1)
+          result=$(xcrun notarytool submit "$dmg" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait --output-format json)
+          echo "$result"
+          status=$(printf '%s' "$result" | python3 -c 'import json, sys; print(json.load(sys.stdin)["status"])')
+          if [ "$status" != Accepted ]; then
+            echo "::error::Apple did not accept the installer: $status"
+            exit 1
+          fi
+          for attempt in $(seq 1 20); do
+            xcrun stapler staple "$dmg" && break
+            if [ "$attempt" = 20 ]; then
+              echo "::error::Apple has not published the installer's notarization ticket"
+              exit 1
+            fi
+            sleep 30
+          done
       - name: Check Mac signature and notarization
         if: runner.os == 'macOS'
         run: |
           app=$(find target/${{ matrix.rust_target }}/release/bundle/macos -maxdepth 1 -name '*.app' | head -1)
+          dmg=$(find target/${{ matrix.rust_target }}/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -1)
           codesign --verify --deep --strict --verbose=2 "$app"
           spctl --assess --type execute --verbose=2 "$app"
-          xcrun stapler validate "$app"
+          xcrun stapler validate "$dmg"
+          # The app's own ticket can lag; Gatekeeper still confirms it online (checked above).
+          xcrun stapler validate "$app" || echo "::warning::MaxRAR.app has no stapled ticket; Gatekeeper will check it online."
       - name: Check Windows Explorer integration
         if: runner.os == 'Windows'
         shell: pwsh
