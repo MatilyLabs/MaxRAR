@@ -14,14 +14,11 @@ Updater signatures are separate from Windows Authenticode and macOS Developer ID
 
 1. Increase the version in `Cargo.toml`, `package.json`, `package-lock.json` and `src-tauri/tauri.conf.json`; regenerate `Cargo.lock`. Write `docs/releases/vVERSION.md`.
 2. Preserve the existing update signing key. Its encrypted private key and password are GitHub repository secrets named `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Keep a protected recoverable backup outside the repository. Do not regenerate or replace it casually: installed apps trust the existing public key.
-3. Commit the release source and push the matching `vVERSION` tag. Prepare an empty draft with your maintainer account, then dispatch **Release packages and signed updates (manual)** on that tag. For v0.1.2, use `git tag -a v0.1.2 -m "MaxRAR v0.1.2"`, `git push origin v0.1.2`, `gh release create v0.1.2 --verify-tag --draft --title "MaxRAR v0.1.2" --notes-file docs/releases/v0.1.2.md`, then `gh workflow run prepare-updates.yml --ref v0.1.2`. The workflow checks the tag and draft before starting expensive builds. It is separate from routine Desktop and CLI validation and is not triggered by documentation edits, pushes or tags.
-4. Each of the four platform jobs validates configuration, runs checks, creates initial installers and signed updater packages, verifies package signatures and signed versions, and checks that tampered content is rejected.
-5. The final job requires all four platforms. It combines their entries into `latest.json`, includes license notices and SHA-256 checksums, and attaches the files to the prepared **draft** GitHub release. No incomplete platform feed is published.
-6. Review the draft and test installed packages. Publishing a non-prerelease as **latest** makes its `latest.json` available at the fixed endpoint, provided the repository is public. Updating another release without this feed would break the latest-release endpoint; always publish the complete release set.
+3. Merge to `main`, then tag that commit and push the tag: `git tag -a v0.1.2 -m "MaxRAR v0.1.2"` and `git push origin v0.1.2`. That is the whole release step.
+4. The **Release** workflow (`.github/workflows/release.yml`) checks that the tag matches the app version and that the notes exist, creates a draft release (or reuses an existing draft for that tag), and builds Windows x64, macOS Apple Silicon, macOS Intel and Linux x64 in parallel. Windows is signed with Azure Artifact Signing; Mac builds are signed and notarized with the Developer ID certificate; updater packages are signed with the Tauri key.
+5. After all four builds succeed, the workflow names the Mac DMGs for each chip, writes `latest.json` and `SHA256SUMS.txt`, publishes the release as **latest** with the notes from `docs/releases/vVERSION.md`, and points the README download links at the new version.
 
-The version tag pins the exact build source while the branch advances. GitHub can require workflow-write authorization when creating or editing release metadata for a commit whose workflow files differ from the default branch. The built-in workflow token cannot receive that permission. A maintainer prepares the draft; CI only uploads assets with Contents write permission. No personal token is stored in Actions for publishing. See [GitHub’s release API permission rules](https://docs.github.com/en/rest/releases/releases#create-a-release).
-
-To recover assembly using already verified packages, dispatch the current workflow with `gh workflow run prepare-updates.yml --ref main -f source_run_id=RUN_ID`. This checks that the original run has four successful platform jobs, its commit matches the version tag, and its release/signing configuration matches. Platform builds are skipped. Assembly replaces its own CI artifact, resumes partial draft asset uploads, and refuses to overwrite a published release. The current checkout must still have the same release version and signing configuration as the original build.
+Tests run on every push and pull request in the **Desktop and CLI** workflow, not again during the release. If a platform build fails, fix it on `main`, then move the tag (`git tag -fa vVERSION -m "MaxRAR vVERSION"`, `git push -f origin vVERSION`); the workflow reuses the same draft.
 
 The signing key was generated using the official Tauri CLI. Its public counterpart is safe to distribute. The signing private key/password must never enter source control, logs, release assets or application configuration.
 
@@ -42,7 +39,7 @@ The native staging verifier is also available locally:
 cargo run --locked -p wonrar-desktop --example verify-updates -- /path/to/staged-release
 ```
 
-It verifies real package bytes and the authenticated version using the same Minisign library used by Tauri, then checks that modified bytes are rejected. Each release platform runs this verifier in CI; it does not execute installers or establish installed upgrade behavior.
+It verifies real package bytes and the authenticated version using the same Minisign library used by Tauri, then checks that modified bytes are rejected. It does not execute installers or establish installed upgrade behavior.
 
 ## In-app behavior
 
